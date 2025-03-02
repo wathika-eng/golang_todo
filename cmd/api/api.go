@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"golang_todo/pkg/config"
+	logging "golang_todo/pkg/logger"
 	"log"
 	"net/http"
 	"os"
@@ -19,7 +20,8 @@ var (
 )
 
 func StartServer() {
-	// database.InitDB()
+	logging.InitLogger()
+	config.InitDB()
 	server := gin.Default()
 	// Routes
 	//api := server.Group("/api")
