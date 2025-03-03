@@ -12,7 +12,7 @@ import (
 
 var ctx = context.Background()
 
-func Migrate(db *bun.DB) {
+func migrate(db *bun.DB) {
 	// users table
 	_, err := db.NewCreateTable().IfNotExists().
 		Model((*types.User)(nil)).Exec(ctx)
@@ -35,7 +35,7 @@ func Migrate(db *bun.DB) {
 	logging.Logger.Info("✅ notes table created successfully!")
 }
 
-func Drop(db *bun.DB) {
+func drop(db *bun.DB) {
 	err := db.ResetModel(ctx, (*types.User)(nil), (*types.Note)(nil))
 	if err != nil {
 		nErr := fmt.Sprintf("❌ Failed to drop tables: %v", err.Error())

@@ -1,3 +1,5 @@
+//go:build !production
+
 package main
 
 import "golang_todo/cmd/api"

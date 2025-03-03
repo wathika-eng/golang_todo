@@ -1,18 +1,16 @@
 package config
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	logging "golang_todo/pkg/logger"
 	"os"
+	"time"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
-)
-
-var (
-	DB *bun.DB
 )
 
 func InitDB() *bun.DB {
@@ -32,24 +30,37 @@ func InitDB() *bun.DB {
 		os.Exit(1)
 	}
 	if err := sqldb.Ping(); err != nil {
-		logging.Logger.Error("Error connecting to the database: %v", err)
+		nErr := fmt.Sprintf("Error connecting to the database: %v", err.Error())
+		logging.Logger.Error(nErr)
 		os.Exit(1)
 	}
-	DB = bun.NewDB(sqldb, pgdialect.New())
-	logging.Logger.Info(string(sqldb.Stats().OpenConnections))
+	if err := healthCheck(sqldb); err != nil {
+		logging.Logger.Error(err.Error())
+		os.Exit(1)
+	}
+	DB := bun.NewDB(sqldb, pgdialect.New())
+	logging.Logger.Info("✅ Database connected successfully")
+
 	return DB
-	// if err := healthCheck(DB.DB); err != nil {
-	// 	log.Fatal(err)
-	// }
 }
 
-// func healthCheck(db *sql.DB) error {
-// 	err := db.Ping()
-// 	if err != nil {
-// 		return errors.New("failed to ping the database")
-// 	}
-// 	inUse := db.Stats().InUse
-// 	idle := db.Stats().Idle
-// 	fmt.Printf("%v, %v\n", inUse, idle)
-// 	return nil
-// }
+// healthCheck checks the database connection and logs relevant stats
+func healthCheck(db *sql.DB) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	startTime := time.Now()
+	err := db.PingContext(ctx)
+	duration := time.Since(startTime)
+
+	if err != nil {
+		return fmt.Errorf("❌ Database health check failed: %v", err)
+	}
+
+	stats := db.Stats()
+	logging.Logger.Info(fmt.Sprintf("✅ Database is healthy (Ping Time: %v)", duration))
+	logging.Logger.Info(fmt.Sprintf("📊 DB Stats - Open Connections: %d, In Use: %d, Idle: %d, Wait Count: %d",
+		stats.OpenConnections, stats.InUse, stats.Idle, stats.WaitCount))
+
+	return nil
+}

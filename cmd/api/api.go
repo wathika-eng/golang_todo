@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"golang_todo/pkg/config"
 	logging "golang_todo/pkg/logger"
-	"golang_todo/pkg/migrations"
+	"golang_todo/pkg/routes"
 	"log"
 	"net/http"
 	"os"
@@ -25,13 +25,11 @@ func StartServer() {
 	// initializer the database
 	db := config.InitDB()
 	defer db.Close()
-	// migrate
-	migrations.Migrate(db)
-	// defer migrations.Drop(db)
+
 	//
 	server := gin.Default()
 	// Routes
-	//api := server.Group("/api")
+	routes.SetupRoutes(server, db)
 
 	// Create HTTP Server with timeout settings
 	srv := &http.Server{
