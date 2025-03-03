@@ -15,7 +15,7 @@ var (
 	DB *bun.DB
 )
 
-func InitDB() {
+func InitDB() *bun.DB {
 	var dsn string
 	if Envs.CONNECTION_STRING == "" {
 		dsn = fmt.Sprintf("%v://%v:%v@%v:%v/%v",
@@ -37,7 +37,7 @@ func InitDB() {
 	}
 	DB = bun.NewDB(sqldb, pgdialect.New())
 	logging.Logger.Info(string(sqldb.Stats().OpenConnections))
-	defer DB.Close()
+	return DB
 	// if err := healthCheck(DB.DB); err != nil {
 	// 	log.Fatal(err)
 	// }

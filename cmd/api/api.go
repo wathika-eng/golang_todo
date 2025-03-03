@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"golang_todo/pkg/config"
 	logging "golang_todo/pkg/logger"
+	"golang_todo/pkg/migrations"
 	"log"
 	"net/http"
 	"os"
@@ -21,7 +22,13 @@ var (
 
 func StartServer() {
 	logging.InitLogger()
-	config.InitDB()
+	// initializer the database
+	db := config.InitDB()
+	defer db.Close()
+	// migrate
+	migrations.Migrate(db)
+	// defer migrations.Drop(db)
+	//
 	server := gin.Default()
 	// Routes
 	//api := server.Group("/api")
