@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"golang_todo/pkg/config"
 	logging "golang_todo/pkg/logger"
+	"golang_todo/pkg/migrations"
 	"golang_todo/pkg/routes"
 	"log"
 	"net/http"
@@ -15,23 +16,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	PORT       = config.Envs.SERVER_PORT
-	SECRET_KEY = config.Envs.SECRET_KEY
-)
-
 func StartServer() {
 	logging.InitLogger()
-	// initializer the database
+
+	// Initialize the database
 	db := config.InitDB()
-	defer db.Close()
 
-	//
+	// Run migrations
+	migrations.Migrate(db)
+	//migrations.Drop(db)
+	// Set up Gin server
 	server := gin.Default()
-	// Routes
-	routes.SetupRoutes(server, db)
 
-	// Create HTTP Server with timeout settings
+	// Inject DB into routes
+	routes.SetupRoutes(server, db)
+	var PORT string = config.Envs.SERVER_PORT
 	srv := &http.Server{
 		Addr:         ":" + PORT,
 		Handler:      server,
@@ -48,7 +47,7 @@ func StartServer() {
 	go func() {
 		fmt.Printf("🚀 Server running on http://localhost:%s\n", PORT)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			server.Run(srv.Addr)
+			logging.Logger.Warn("Server failed: ", err)
 		}
 	}()
 
@@ -61,8 +60,11 @@ func StartServer() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("error shutdowning the server: %v", err)
+		log.Fatalf("Error shutting down the server: %v", err)
 	}
+
+	// Close DB connection
+	db.Close()
 
 	fmt.Println("✅ Server gracefully stopped")
 }
