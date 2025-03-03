@@ -3,6 +3,7 @@ package routes
 import (
 	"golang_todo/pkg/handlers"
 	"golang_todo/pkg/repository"
+	"golang_todo/pkg/services"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,13 +12,14 @@ import (
 
 func SetupRoutes(s *gin.Engine, db *bun.DB) {
 	userRepo := repository.NewUserRepo(db)
-	userHandler := handlers.NewUserHandler(userRepo)
+	services := services.NewUserServices()
+	userHandler := handlers.NewUserHandler(userRepo, services)
 	api := s.Group("/api")
 	users := api.Group("/users")
 	{
 		users.GET("/test", utest)
 		users.POST("/signup", userHandler.SignUp)
-		users.POST("/login", handlers.Login)
+		users.POST("/login", userHandler.Login)
 	}
 	notes := api.Group("/notes")
 	{

@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"golang_todo/pkg/repository"
+	"golang_todo/pkg/services"
 	"golang_todo/pkg/types"
 	"net/http"
 
@@ -14,12 +15,13 @@ import (
 //
 //	database operations without directly interacting with the database.
 type UserHandler struct {
-	userRepo *repository.UserRepo
+	userRepo     *repository.UserRepo
+	userServices *services.UserServices
 }
 
 // constructor
-func NewUserHandler(userRepo *repository.UserRepo) *UserHandler {
-	return &UserHandler{userRepo: userRepo}
+func NewUserHandler(userRepo *repository.UserRepo, userServices *services.UserServices) *UserHandler {
+	return &UserHandler{userRepo: userRepo, userServices: userServices}
 }
 
 var (
@@ -34,11 +36,20 @@ func (h *UserHandler) SignUp(c *gin.Context) {
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   true,
-			"message": validator.DecryptErrors(err),
+			"message": err.Error(),
 		})
 		return
 	}
-	err = h.userRepo.InsertUser(&user)
+	hashedPassword, err := h.userServices.HashPassword(user.Password)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": err.Error(),
+		})
+		return
+	}
+	user.Password = hashedPassword
+	err = h.userRepo.InsertUser(user)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   true,
@@ -52,7 +63,7 @@ func (h *UserHandler) SignUp(c *gin.Context) {
 	})
 }
 
-func Login(c *gin.Context) {
+func (h *UserHandler) Login(c *gin.Context) {
 	//c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private")
 	var user types.User
 	err := c.ShouldBindJSON(&user)
@@ -61,5 +72,16 @@ func Login(c *gin.Context) {
 			"error":   true,
 			"message": validator.DecryptErrors(err),
 		})
+		return
 	}
+	userFound, err := h.userRepo.GetUserByEmail(user.Email)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": err.Error(),
+		})
+		return
+	}
+	err = h.userServices.CheckPassword(userFound.Password, user.Password)
+
 }

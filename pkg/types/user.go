@@ -10,8 +10,8 @@ type User struct {
 	bun.BaseModel `bun:"table:users,alias:u"`
 
 	ID         uint       `json:"id" bun:"id,pk,autoincrement"`
-	Email      string     `json:"email" binding:"required,email" bun:"email,notnull,unique"`
-	Password   string     `json:"password" binding:"required" bun:"password,notnull"`
+	Email      string     `json:"email" binding:"required,email,contains=@gmail.com" bun:"email,notnull,unique"`
+	Password   string     `json:"-" binding:"required,gt=8" bun:"password,notnull"`
 	Notes      []Note     `json:"notes" bun:"rel:has-many,join:id=user_id"`
 	Created_At time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	Last_Login time.Time  `bun:"last_login,notnull,default:current_timestamp"`
