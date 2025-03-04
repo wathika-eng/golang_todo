@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/golodash/galidator"
 )
 
@@ -16,11 +17,11 @@ import (
 //	database operations without directly interacting with the database.
 type UserHandler struct {
 	userRepo     *repository.UserRepo
-	userServices *services.UserServices
+	userServices services.Auth
 }
 
 // constructor
-func NewUserHandler(userRepo *repository.UserRepo, userServices *services.UserServices) *UserHandler {
+func NewUserHandler(userRepo *repository.UserRepo, userServices services.Auth) *UserHandler {
 	return &UserHandler{userRepo: userRepo, userServices: userServices}
 }
 
@@ -83,5 +84,70 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 	err = h.userServices.CheckPassword(userFound.Password, user.Password)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": "Wrong password!",
+		})
+		return
+	}
+	access_token, refresh_token, err := h.userServices.GenerateToken(userFound.ID, userFound.Email)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": "Wrong password!",
+		})
+		return
+	}
 
+	c.JSON(200, gin.H{
+		"error":         false,
+		"message":       "Access granted",
+		"access_token":  access_token,
+		"refresh_token": refresh_token,
+	})
+}
+
+func (h *UserHandler) RefreshAccess(c *gin.Context) {
+	var req struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
+	}
+	if err := c.ShouldBindBodyWithJSON(&req); err != nil {
+		c.AbortWithStatusJSON(400, gin.H{
+			"error":   true,
+			"message": "refresh token not found",
+		})
+		return
+	}
+	validToken, err := h.userServices.ValidateToken(req.RefreshToken, true)
+	if err != nil || !validToken.Valid || validToken == nil {
+		c.AbortWithStatusJSON(400, gin.H{
+			"error":   true,
+			"message": "refresh token is invalid",
+		})
+		return
+	}
+	claims, ok := validToken.Claims.(jwt.MapClaims)
+	if !ok {
+		c.AbortWithStatusJSON(400, gin.H{
+			"error":   true,
+			"message": "invalid token data",
+		})
+		return
+	}
+	userID, email := claims["user_id"].(uint), claims["sub"].(string)
+	newAccessToken, newRefreshToken, err := h.userServices.GenerateToken(userID, email)
+	if err != nil {
+		c.AbortWithStatusJSON(400, gin.H{
+			"error":   true,
+			"message": "failed to generate new tokens",
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"error":         false,
+		"message":       "Access granted",
+		"access_token":  newAccessToken,
+		"refresh_token": newRefreshToken,
+	})
 }

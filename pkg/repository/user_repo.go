@@ -42,6 +42,5 @@ func (r *UserRepo) GetUserByEmail(email string) (*types.User, error) {
 		}
 		return nil, fmt.Errorf("error fetching user by email: %v", err)
 	}
-	print(user.Password)
 	return &user, nil
 }

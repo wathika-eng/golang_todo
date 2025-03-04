@@ -1,7 +1,9 @@
 package routes
 
 import (
+	"golang_todo/pkg/config"
 	"golang_todo/pkg/handlers"
+	"golang_todo/pkg/middleware"
 	"golang_todo/pkg/repository"
 	"golang_todo/pkg/services"
 	"time"
@@ -10,9 +12,11 @@ import (
 	"github.com/uptrace/bun"
 )
 
+var secretKey = config.Envs.SECRET_KEY
+
 func SetupRoutes(s *gin.Engine, db *bun.DB) {
 	userRepo := repository.NewUserRepo(db)
-	services := services.NewUserServices()
+	services := services.NewUserServices([]byte(secretKey))
 	userHandler := handlers.NewUserHandler(userRepo, services)
 	api := s.Group("/api")
 	users := api.Group("/users")
@@ -20,8 +24,10 @@ func SetupRoutes(s *gin.Engine, db *bun.DB) {
 		users.GET("/test", utest)
 		users.POST("/signup", userHandler.SignUp)
 		users.POST("/login", userHandler.Login)
+		users.POST("/refresh", userHandler.RefreshAccess)
 	}
 	notes := api.Group("/notes")
+	notes.Use(middleware.AuthMiddleware(services))
 	{
 		notes.GET("/test", ntest)
 		notes.POST("/", handlers.CreateNotes)
