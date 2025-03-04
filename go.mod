@@ -7,6 +7,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/golodash/galidator v1.4.4
 	github.com/joho/godotenv v1.5.1
+	github.com/resend/resend-go/v2 v2.15.0
 	github.com/uptrace/bun v1.2.10
 	github.com/uptrace/bun/dialect/pgdialect v1.2.10
 	github.com/uptrace/bun/driver/pgdriver v1.2.10

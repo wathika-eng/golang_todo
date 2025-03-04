@@ -18,6 +18,8 @@ type config struct {
 	DB_NAME           string
 	CONNECTION_STRING string
 	SECRET_KEY        string
+	REFRESH_KEY       string
+	RESEND_API_KEY    string
 }
 
 var Envs = initConfigs()
@@ -36,6 +38,8 @@ func initConfigs() config {
 		DB_NAME:           getEnv("DB_NAME", "todoApp"),
 		CONNECTION_STRING: getEnv("CONNECTION_STRING", ""),
 		SECRET_KEY:        getEnv("SECRET_KEY", "https://acte.ltd/utils/randomkeygen"),
+		REFRESH_KEY:       getEnv("REFRESH_KEY", "https://randomkeygen.com/"),
+		RESEND_API_KEY:    getEnv("RESEND_API_KEY", ""),
 	}
 }
 

@@ -5,7 +5,9 @@ import (
 	"golang_todo/pkg/repository"
 	"golang_todo/pkg/services"
 	"golang_todo/pkg/types"
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -50,6 +52,7 @@ func (h *UserHandler) SignUp(c *gin.Context) {
 		return
 	}
 	user.Password = hashedPassword
+	// _, _ = h.userServices.SendEmail(user.Email)
 	err = h.userRepo.InsertUser(user)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -91,7 +94,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		})
 		return
 	}
-	access_token, refresh_token, err := h.userServices.GenerateToken(userFound.ID, userFound.Email)
+	access_token, refresh_token, err := h.userServices.GenerateToken(userFound.ID, userFound.Email, user.Role, false)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   true,
@@ -112,7 +115,8 @@ func (h *UserHandler) RefreshAccess(c *gin.Context) {
 	var req struct {
 		RefreshToken string `json:"refresh_token" binding:"required"`
 	}
-	if err := c.ShouldBindBodyWithJSON(&req); err != nil {
+	err := c.ShouldBindBodyWithJSON(&req)
+	if err != nil || strings.TrimSpace(req.RefreshToken) == "" {
 		c.AbortWithStatusJSON(400, gin.H{
 			"error":   true,
 			"message": "refresh token not found",
@@ -121,6 +125,7 @@ func (h *UserHandler) RefreshAccess(c *gin.Context) {
 	}
 	validToken, err := h.userServices.ValidateToken(req.RefreshToken, true)
 	if err != nil || !validToken.Valid || validToken == nil {
+		log.Println(err)
 		c.AbortWithStatusJSON(400, gin.H{
 			"error":   true,
 			"message": "refresh token is invalid",
@@ -135,8 +140,8 @@ func (h *UserHandler) RefreshAccess(c *gin.Context) {
 		})
 		return
 	}
-	userID, email := claims["user_id"].(uint), claims["sub"].(string)
-	newAccessToken, newRefreshToken, err := h.userServices.GenerateToken(userID, email)
+	userID, email, role := claims["user_id"].(uint), claims["sub"].(string), claims["role"].(string)
+	newAccessToken, newRefreshToken, err := h.userServices.GenerateToken(userID, email, role, true)
 	if err != nil {
 		c.AbortWithStatusJSON(400, gin.H{
 			"error":   true,
