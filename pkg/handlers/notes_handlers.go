@@ -3,23 +3,49 @@ package handlers
 import (
 	"fmt"
 	"golang_todo/pkg/repository"
-	"golang_todo/pkg/services"
+	notesservices "golang_todo/pkg/services/notes_services"
+	"golang_todo/pkg/types"
+	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-type NotesHandler struct{
-	NotesRepo *repository.NotesRepository
-	NotesServices *services.NotesServices
+type NotesHandler struct {
+	NotesRepo     *repository.NotesRepository
+	NotesServices *notesservices.NotesServices
 }
 
-func NewNotesHandler(repository.NotesRepository, services.NotesServices)  {
-
+func NewNotesHandler(notesRepo *repository.NotesRepository, notesServices *notesservices.NotesServices) *NotesHandler {
+	return &NotesHandler{
+		NotesRepo:     notesRepo,
+		NotesServices: notesServices,
+	}
 }
 
 // create
-func CreateNotes(c *gin.Context) {
-
+func (h *NotesHandler) CreateNotes(c *gin.Context) {
+	var notes types.Note
+	err := c.ShouldBindBodyWithJSON(&notes)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": err.Error(),
+		})
+		return
+	}
+	err = h.NotesRepo.InsertNotes(notes)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(201, gin.H{
+		"error":   false,
+		"message": "Notes created successfulyy",
+	})
 }
 
 // read
@@ -48,4 +74,11 @@ func DeleteNotes(c *gin.Context) {
 
 func GetUserDetails(c *gin.Context) {
 
+}
+
+func (h *NotesHandler) NotesTest(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "notes API is up and running",
+		"time":    time.Now().Local(),
+	})
 }
