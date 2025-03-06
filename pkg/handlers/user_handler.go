@@ -28,8 +28,9 @@ func NewUserHandler(userRepo *repository.UserRepo, userServices services.Auth) *
 }
 
 var (
-	g         = galidator.G()
-	validator = g.Validator(types.User{})
+	g              = galidator.G()
+	userValidator  = g.Validator(types.User{})
+	notesValidator = g.Validator(types.Note{})
 )
 
 func (h *UserHandler) SignUp(c *gin.Context) {
@@ -74,7 +75,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   true,
-			"message": validator.DecryptErrors(err),
+			"message": userValidator.DecryptErrors(err),
 		})
 		return
 	}

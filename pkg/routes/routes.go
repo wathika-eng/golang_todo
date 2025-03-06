@@ -37,8 +37,8 @@ func SetupRoutes(s *gin.Engine, db *bun.DB) {
 	{
 		notes.GET("/profile")
 		notes.GET("/test", notesHandler.NotesTest)
-		notes.POST("/create", notesHandler.NotesTest)
-		notes.GET("/", handlers.GetNotes)
+		notes.POST("/create", notesHandler.CreateNotes)
+		notes.GET("/", notesHandler.GetNotes)
 		notes.GET("/:id", handlers.GetNoteByID)
 		notes.PATCH("/:id", handlers.UpdateNotes)
 		notes.DELETE("/:id", handlers.DeleteNotes)

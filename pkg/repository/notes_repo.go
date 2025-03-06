@@ -25,3 +25,13 @@ func (r *NotesRepository) InsertNotes(notes types.Note) error {
 	println(resp)
 	return nil
 }
+
+func (r *NotesRepository) GetAllNotes() (*types.Note, error) {
+	var notes types.Note
+	err := r.db.NewSelect().Model(&notes).Scan(ctx, &notes)
+	if err != nil {
+		return nil, fmt.Errorf("error inserting new note: %v", err.Error())
+	}
+	fmt.Println(notes)
+	return &notes, nil
+}

@@ -23,7 +23,7 @@ type Note struct {
 	bun.BaseModel `bun:"table:notes"`
 	ID            uint       `json:"notes_id" bun:"id,pk,autoincrement"`
 	Body          string     `json:"notes_body" binding:"required" bun:"body,notnull"`
-	Completed     bool       `json:"completed" binding:"required"  bun:"completed,default:false"`
+	Completed     bool       `json:"completed"  bun:"completed,default:false"`
 	Created_At    time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	Updated_At    *time.Time `bun:"updated_at,nullzero,default:current_timestamp"`
 	DeletedAt     *time.Time `bun:"deleted_at,soft_delete,nullzero"`

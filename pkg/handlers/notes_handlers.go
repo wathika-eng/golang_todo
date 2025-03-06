@@ -30,7 +30,7 @@ func (h *NotesHandler) CreateNotes(c *gin.Context) {
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   true,
-			"message": err.Error(),
+			"message": notesValidator.DecryptErrors(err),
 		})
 		return
 	}
@@ -49,8 +49,16 @@ func (h *NotesHandler) CreateNotes(c *gin.Context) {
 }
 
 // read
-func GetNotes(c *gin.Context) {
-
+func (h *NotesHandler) GetNotes(c *gin.Context) {
+	notes, err := h.NotesRepo.GetAllNotes()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": err.Error(),
+		})
+		return
+	}
+	fmt.Println(notes)
 }
 
 // read
