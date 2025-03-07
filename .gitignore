@@ -22,7 +22,11 @@ main
 *.out
 *.txt
 *.bin
-
+*.vscode/
+*.idea/
+*.iml 
+*.log
+*.log.*
 # Dependency directories (remove the comment below to include it)
 # vendor/
 

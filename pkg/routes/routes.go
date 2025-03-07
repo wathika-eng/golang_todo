@@ -6,7 +6,6 @@ import (
 	"golang_todo/pkg/repository"
 	"golang_todo/pkg/services"
 	notesservices "golang_todo/pkg/services/notes_services"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/uptrace/bun"
@@ -23,7 +22,7 @@ func SetupRoutes(s *gin.Engine, db *bun.DB) {
 	api := s.Group("/api")
 	users := api.Group("/users")
 	{
-		users.GET("/test", utest)
+		users.GET("/test", userHandler.UserTest)
 		users.POST("/signup", userHandler.SignUp)
 		users.POST("/login", userHandler.Login)
 		users.POST("/refresh", userHandler.RefreshAccess)
@@ -39,15 +38,8 @@ func SetupRoutes(s *gin.Engine, db *bun.DB) {
 		notes.GET("/test", notesHandler.NotesTest)
 		notes.POST("/create", notesHandler.CreateNotes)
 		notes.GET("/", notesHandler.GetNotes)
-		notes.GET("/:id", handlers.GetNoteByID)
-		notes.PATCH("/:id", handlers.UpdateNotes)
-		notes.DELETE("/:id", handlers.DeleteNotes)
+		notes.GET("/:id", notesHandler.GetNoteByID)
+		notes.PATCH("/:id", notesHandler.UpdateNotes)
+		notes.DELETE("/:id", notesHandler.DeleteNotes)
 	}
-}
-
-func utest(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "API is up and running",
-		"time":    time.Now().Local(),
-	})
 }

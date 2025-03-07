@@ -23,8 +23,8 @@ func StartServer() {
 	db := config.InitDB()
 
 	// Run migrations
-	// migrations.Migrate(db)
-	migrations.Drop(db)
+	migrations.Migrate(db)
+	// migrations.Drop(db)
 	// Set up Gin server
 	server := gin.Default()
 

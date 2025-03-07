@@ -6,6 +6,8 @@ import (
 	notesservices "golang_todo/pkg/services/notes_services"
 	"golang_todo/pkg/types"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -59,24 +61,54 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 		return
 	}
 	fmt.Println(notes)
+	if len(notes) == 0 {
+		c.JSON(200, gin.H{
+			"error":   false,
+			"message": "no todos in the database",
+			"todos":   notes,
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"error":   false,
+		"message": notes,
+	})
 }
 
 // read
-func GetNoteByID(c *gin.Context) {
-	id := c.Param("id")
-	resp := fmt.Sprintf("id requested: %v", id)
+func (h *NotesHandler) GetNoteByID(c *gin.Context) {
+	id := strings.TrimSpace(c.Param("id"))
+	uintID, err := strconv.Atoi(id)
+	if err != nil || uintID < 0 {
+		errM := fmt.Sprintf("could not convert %v to integer: %v", id, err.Error())
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+
+			"error":   true,
+			"message": errM,
+		})
+		return
+	}
+	notes, err := h.NotesRepo.GetNoteByID(uint(uintID))
+	if err != nil || uintID <= 0 {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": err.Error(),
+		})
+		return
+	}
 	c.JSON(200, gin.H{
-		"message": resp,
+		"error":   false,
+		"message": notes,
 	})
 }
 
 // update
-func UpdateNotes(c *gin.Context) {
+func (h *NotesHandler) UpdateNotes(c *gin.Context) {
 
 }
 
 // delete
-func DeleteNotes(c *gin.Context) {
+func (h *NotesHandler) DeleteNotes(c *gin.Context) {
 
 }
 

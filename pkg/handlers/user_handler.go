@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -155,5 +156,12 @@ func (h *UserHandler) RefreshAccess(c *gin.Context) {
 		"message":       "Access granted",
 		"access_token":  newAccessToken,
 		"refresh_token": newRefreshToken,
+	})
+}
+
+func (r *UserHandler) UserTest(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "API is up and running",
+		"time":    time.Now().Local(),
 	})
 }
