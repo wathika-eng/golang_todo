@@ -16,7 +16,7 @@ import (
 var secretKey = config.Envs.SECRET_KEY
 var refreshKey = config.Envs.REFRESH_KEY
 var resendApiKey = config.Envs.RESEND_API_KEY
-var redisURL = config.Envs
+var redisURL = config.Envs.REDIS_URL
 
 func SetupRoutes(s *gin.Engine, db *bun.DB) {
 	userRepo := repository.NewUserRepo(db)
@@ -33,10 +33,10 @@ func SetupRoutes(s *gin.Engine, db *bun.DB) {
 
 	notesRepo := repository.NewNotesRepo(db)
 	notesServices := notesservices.NewNotesServices()
-	redisServices := redisservices.NewRedisClient()
+	redisServices := redisservices.NewRedisClient(redisURL)
 	notesHandler := handlers.NewNotesHandler(notesRepo, notesServices, redisServices)
 	notes := api.Group("/notes")
-	notes.Use(middleware.AuthMiddleware(services))
+	notes.Use(middleware.AuthMiddleware(services, db, redisServices))
 	{
 		notes.GET("/profile")
 		notes.GET("/test", notesHandler.NotesTest)
@@ -45,5 +45,6 @@ func SetupRoutes(s *gin.Engine, db *bun.DB) {
 		notes.GET("/:id", notesHandler.GetNoteByID)
 		notes.PATCH("/:id", notesHandler.UpdateNotes)
 		notes.DELETE("/:id", notesHandler.DeleteNotes)
+		notes.POST("/logout", notesHandler.Logout)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"golang_todo/pkg/config"
 	logging "golang_todo/pkg/logger"
+	"golang_todo/pkg/migrations"
 	"golang_todo/pkg/routes"
 	"log"
 	"net/http"
@@ -22,9 +23,9 @@ func StartServer() {
 	db := config.InitDB()
 
 	// Run migrations once
-	// migrations.Migrate(db)
+	//migrations.Migrate(db)
 	// drop and recreate the DB
-	// migrations.Drop(db)
+	migrations.Drop(db)
 	// Set up Gin server
 	server := gin.Default()
 	// Inject DB into routesr)

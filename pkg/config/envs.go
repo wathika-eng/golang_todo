@@ -22,6 +22,7 @@ type config struct {
 	RESEND_API_KEY    string
 	UPTRACE_DSN       string
 	GIN_MODE          string
+	REDIS_URL         string
 }
 
 var Envs = initConfigs()
@@ -44,6 +45,7 @@ func initConfigs() config {
 		RESEND_API_KEY:    getEnv("RESEND_API_KEY", ""),
 		UPTRACE_DSN:       getEnv("UPTRACE_DSN", ""),
 		GIN_MODE:          getEnv("GIN_MODE", "release"),
+		REDIS_URL:         getEnv("REDIS_URL", "localhost:6379"),
 	}
 }
 

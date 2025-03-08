@@ -22,7 +22,7 @@ func InitDB() *bun.DB {
 	} else {
 		dsn = Envs.CONNECTION_STRING
 	}
-	// logging.Logger.Info(dsn)
+	logging.Logger.Info(dsn)
 
 	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
 	if sqldb == nil {

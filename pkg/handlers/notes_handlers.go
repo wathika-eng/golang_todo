@@ -17,11 +17,11 @@ import (
 type NotesHandler struct {
 	NotesRepo     *repository.NotesRepository
 	NotesServices *notesservices.NotesServices
-	redisServices *redisservices.RedisService
+	redisServices redisservices.Redis
 }
 
-func NewNotesHandler(notesRepo *repository.NotesRepository, notesServices *notesservices.NotesServices
-	,redisServices *redisservices.RedisService ) *NotesHandler {
+func NewNotesHandler(notesRepo *repository.NotesRepository, notesServices *notesservices.NotesServices,
+	redisServices redisservices.Redis) *NotesHandler {
 	return &NotesHandler{
 		NotesRepo:     notesRepo,
 		NotesServices: notesServices,
@@ -49,6 +49,7 @@ func (h *NotesHandler) CreateNotes(c *gin.Context) {
 		return
 	}
 	notes.UserID = userID.(uint)
+	fmt.Println(notes.UserID)
 	err = h.NotesRepo.InsertNotes(notes)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -65,7 +66,16 @@ func (h *NotesHandler) CreateNotes(c *gin.Context) {
 
 // read
 func (h *NotesHandler) GetNotes(c *gin.Context) {
-	notes, err := h.NotesRepo.GetAllNotes()
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error":   true,
+			"message": "unauthorized",
+		})
+		return
+	}
+	fmt.Println(userID.(uint))
+	notes, err := h.NotesRepo.GetAllNotes(userID.(uint))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   true,
@@ -129,15 +139,42 @@ func GetUserDetails(c *gin.Context) {
 }
 
 func (h *NotesHandler) Logout(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+	requiredKeys := []string{"user_id", "exp_time", "user_token"}
+	values := make(map[string]interface{})
+
+	for _, key := range requiredKeys {
+		val, exists := c.Get(key)
+		if !exists {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error":   true,
+				"message": key + " not found",
+			})
+			return
+		}
+		values[key] = val
+	}
+
+	token, _ := values["user_token"].(string)
+	expTimeDuration, ok := values["exp_time"].(time.Duration)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"error":   true,
-			"message": "unauthorized",
+			"message": "invalid exp_time format",
 		})
 		return
 	}
-	h.redisServices.BlackListToken()
+	err := h.redisServices.BlackListToken(token, expTimeDuration)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error":   true,
+			"message": "could not blacklist token",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"error":   false,
+		"message": "logged out successfully",
+	})
 }
 
 func (h *NotesHandler) NotesTest(c *gin.Context) {

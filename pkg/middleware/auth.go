@@ -1,16 +1,20 @@
 package middleware
 
 import (
+	"context"
 	"golang_todo/pkg/services"
 	redisservices "golang_todo/pkg/services/redis"
+	"golang_todo/pkg/types"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/uptrace/bun"
 )
 
-func AuthMiddleware(authService services.Auth) gin.HandlerFunc {
+func AuthMiddleware(authService services.Auth, db *bun.DB, redisService redisservices.Redis) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -22,19 +26,18 @@ func AuthMiddleware(authService services.Auth) gin.HandlerFunc {
 			return
 		}
 		token := strings.TrimPrefix(authHeader, "Bearer ")
-		if redisservices.NewRedisClient().IsTokenBlacklisted(token) {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   true,
-				"message": "token revoked",
-			})
-			return
-		}
-
 		verifiedToken, err := authService.ValidateToken(token, false)
 		if err != nil || verifiedToken == nil || !verifiedToken.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   true,
 				"message": "invalid token",
+			})
+			return
+		}
+		if redisService.IsTokenBlacklisted(token) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error":   true,
+				"message": "token revoked",
 			})
 			return
 		}
@@ -55,10 +58,19 @@ func AuthMiddleware(authService services.Auth) gin.HandlerFunc {
 			})
 			return
 		}
-		// userID := uint(userIDFloat)
-
+		// bug when db is dropped, token is still valid
+		var user types.User
+		err = db.NewSelect().Model(&user).Where("id = ?", userID).Scan(context.Background())
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": true, "message": "user not found"})
+			return
+		}
+		expUnix := int64(claims["exp"].(float64))
+		expirationTime := time.Until(time.Unix(expUnix, 0))
 		// Store userID in context
 		c.Set("user_id", uint(userID))
+		c.Set("exp_time", expirationTime)
+		c.Set("user_token", token)
 		c.Next()
 	}
 }

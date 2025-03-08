@@ -25,9 +25,9 @@ func (r *NotesRepository) InsertNotes(notes types.Note) error {
 	return nil
 }
 
-func (r *NotesRepository) GetAllNotes() ([]types.Note, error) {
+func (r *NotesRepository) GetAllNotes(userID uint) ([]types.Note, error) {
 	var notes []types.Note
-	err := r.db.NewSelect().Model(&notes).Scan(ctx)
+	err := r.db.NewSelect().Model(&notes).Where("user_id = ?", userID).Scan(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching notes: %v", err)
 	}

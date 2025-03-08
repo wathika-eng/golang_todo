@@ -1,6 +1,7 @@
 package redisservices
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -8,13 +9,19 @@ import (
 )
 
 type RedisService struct {
-	Client *redis.Client
+	redisURL string
+	Client   *redis.Client
 }
 
-func NewRedisClient() *RedisService {
+type Redis interface {
+	BlackListToken(string, time.Duration) error
+	IsTokenBlacklisted(string) bool
+}
+
+func NewRedisClient(redisURL string) Redis {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379", // Redis default port
-		Password: "",               // No password by default
+		Addr:     redisURL, // Redis default port
+		Password: "",       // No password by default
 		DB:       0,
 	})
 	_, err := client.Ping().Result()
@@ -24,14 +31,24 @@ func NewRedisClient() *RedisService {
 	}
 
 	log.Println("Connected to Redis")
-	return &RedisService{Client: client}
+	return &RedisService{
+		redisURL: redisURL,
+		Client:   client,
+	}
 }
 
 func (r *RedisService) BlackListToken(token string, exp time.Duration) error {
-	return r.Client.Set("blacklisted", token, exp).Err()
+	return r.Client.Set(token, "blacklisted", exp).Err()
 }
 
 func (r *RedisService) IsTokenBlacklisted(token string) bool {
 	_, err := r.Client.Get(token).Result()
-	return err == nil
+	if err == redis.Nil {
+		return false // Token is not blacklisted
+	}
+	if err != nil {
+		fmt.Println("Redis error:", err)
+		return false
+	}
+	return true // token is blacklisted
 }
