@@ -39,7 +39,7 @@ func (r *UserRepo) GetUserByEmail(email string) (*types.User, error) {
 	err := r.db.NewSelect().
 		Model(&user).
 		Where("email = ?", email).
-		Relation("Notes"). // Preload the Notes (todos)
+		Relation("Notes").
 		Scan(ctx)
 
 	if err != nil {

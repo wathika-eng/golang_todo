@@ -5,7 +5,6 @@ import (
 	"golang_todo/pkg/repository"
 	"golang_todo/pkg/services"
 	"golang_todo/pkg/types"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -131,7 +130,7 @@ func (h *UserHandler) RefreshAccess(c *gin.Context) {
 	}
 	validToken, err := h.userServices.ValidateToken(req.RefreshToken, true)
 	if err != nil || !validToken.Valid || validToken == nil {
-		log.Println(err)
+		// log.Println(err)
 		c.AbortWithStatusJSON(400, gin.H{
 			"error":   true,
 			"message": "refresh token is invalid",
@@ -160,6 +159,29 @@ func (h *UserHandler) RefreshAccess(c *gin.Context) {
 		"message":       "Access granted",
 		"access_token":  newAccessToken,
 		"refresh_token": newRefreshToken,
+	})
+}
+
+func (r *UserHandler) UserProfile(c *gin.Context) {
+	userEmail, exists := c.Get("user_email")
+	if !exists {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error":   true,
+			"message": "unauthorized",
+		})
+		return
+	}
+	userData, err := r.userRepo.GetUserByEmail(userEmail.(string))
+	if err != nil {
+		c.AbortWithStatusJSON(400, gin.H{
+			"error":   true,
+			"message": "failed to fetch user details",
+		})
+		return
+	}
+	userData.Password = ""
+	c.JSON(200, gin.H{
+		"user": userData,
 	})
 }
 

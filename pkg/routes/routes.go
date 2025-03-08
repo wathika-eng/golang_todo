@@ -38,7 +38,6 @@ func SetupRoutes(s *gin.Engine, db *bun.DB) {
 	notes := api.Group("/notes")
 	notes.Use(middleware.AuthMiddleware(services, db, redisServices))
 	{
-		notes.GET("/profile")
 		notes.GET("/test", notesHandler.NotesTest)
 		notes.POST("/create", notesHandler.CreateNotes)
 		notes.GET("/", notesHandler.GetNotes)
@@ -46,5 +45,10 @@ func SetupRoutes(s *gin.Engine, db *bun.DB) {
 		notes.PATCH("/:id", notesHandler.UpdateNotes)
 		notes.DELETE("/:id", notesHandler.DeleteNotes)
 		notes.POST("/logout", notesHandler.Logout)
+	}
+	userProfile := api.Group("/profile")
+	userProfile.Use(middleware.AuthMiddleware(services, db, redisServices))
+	{
+		userProfile.GET("/", userHandler.UserProfile)
 	}
 }

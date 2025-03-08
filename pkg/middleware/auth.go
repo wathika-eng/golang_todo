@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"golang_todo/pkg/services"
 	redisservices "golang_todo/pkg/services/redis"
 	"golang_todo/pkg/types"
@@ -52,8 +51,8 @@ func AuthMiddleware(authService services.Auth, db *bun.DB, redisService redisser
 			})
 			return
 		}
-		fmt.Println(claims)
 		userIDStr, exists := claims["user_id"].(string)
+		userEmail := claims["sub"].(string)
 		if !exists {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   true,
@@ -76,6 +75,7 @@ func AuthMiddleware(authService services.Auth, db *bun.DB, redisService redisser
 		expirationTime := time.Until(time.Unix(expUnix, 0))
 		// Store userID in context
 		c.Set("user_id", userID)
+		c.Set("user_email", userEmail)
 		c.Set("exp_time", expirationTime)
 		c.Set("user_token", token)
 		c.Next()

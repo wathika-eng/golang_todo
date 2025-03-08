@@ -13,7 +13,7 @@ type User struct {
 	ID         uuid.UUID  `json:"user_id" bun:",pk,type:uuid,default:uuid_generate_v4()"`
 	Email      string     `json:"email" binding:"required,email,contains=@gmail.com" bun:"email,notnull,unique"`
 	Role       string     `json:"role" bun:"default:'user'"`
-	Password   string     `json:"password" binding:"required,gt=8" bun:"password,notnull"`
+	Password   string     `json:"-" binding:"required,gt=8" bun:"password,notnull"`
 	Notes      []Note     `json:"notes" bun:"rel:has-many,join:id=user_id"`
 	Created_At time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	Last_Login time.Time  `bun:"last_login,notnull,default:current_timestamp"`
