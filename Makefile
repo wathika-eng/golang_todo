@@ -5,7 +5,7 @@ run:
 
 build:
 	@echo "Building the application"
-	go build -o bin/main main.go
+	go build -ldflags="-s -w" -o bin/main cmd/main.go
 
 clean:
 	@echo "Cleaning the application"
