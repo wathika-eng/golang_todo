@@ -7,7 +7,8 @@ import (
 
 var Logger *slog.Logger
 
-func InitLogger() {
+func InitLogger(dsn string) {
+	// upm(dsn)
 	Logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(Logger)
 }

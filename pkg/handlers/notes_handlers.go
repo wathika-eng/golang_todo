@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"golang_todo/pkg/repository"
 	notesservices "golang_todo/pkg/services/notes_services"
+	redisservices "golang_todo/pkg/services/redis"
 	"golang_todo/pkg/types"
 	"net/http"
 	"strconv"
@@ -16,17 +17,28 @@ import (
 type NotesHandler struct {
 	NotesRepo     *repository.NotesRepository
 	NotesServices *notesservices.NotesServices
+	redisServices *redisservices.RedisService
 }
 
-func NewNotesHandler(notesRepo *repository.NotesRepository, notesServices *notesservices.NotesServices) *NotesHandler {
+func NewNotesHandler(notesRepo *repository.NotesRepository, notesServices *notesservices.NotesServices
+	,redisServices *redisservices.RedisService ) *NotesHandler {
 	return &NotesHandler{
 		NotesRepo:     notesRepo,
 		NotesServices: notesServices,
+		redisServices: redisServices,
 	}
 }
 
 // create
 func (h *NotesHandler) CreateNotes(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error":   true,
+			"message": "unauthorized",
+		})
+		return
+	}
 	var notes types.Note
 	err := c.ShouldBindBodyWithJSON(&notes)
 	if err != nil {
@@ -36,6 +48,7 @@ func (h *NotesHandler) CreateNotes(c *gin.Context) {
 		})
 		return
 	}
+	notes.UserID = userID.(uint)
 	err = h.NotesRepo.InsertNotes(notes)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -60,8 +73,7 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 		})
 		return
 	}
-	fmt.Println(notes)
-	if len(notes) == 0 {
+	if len(notes) <= 0 {
 		c.JSON(200, gin.H{
 			"error":   false,
 			"message": "no todos in the database",
@@ -70,8 +82,8 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{
-		"error":   false,
-		"message": notes,
+		"error": false,
+		"todos": notes,
 	})
 }
 
@@ -114,6 +126,18 @@ func (h *NotesHandler) DeleteNotes(c *gin.Context) {
 
 func GetUserDetails(c *gin.Context) {
 
+}
+
+func (h *NotesHandler) Logout(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error":   true,
+			"message": "unauthorized",
+		})
+		return
+	}
+	h.redisServices.BlackListToken()
 }
 
 func (h *NotesHandler) NotesTest(c *gin.Context) {

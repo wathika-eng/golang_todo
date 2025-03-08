@@ -20,6 +20,8 @@ type config struct {
 	SECRET_KEY        string
 	REFRESH_KEY       string
 	RESEND_API_KEY    string
+	UPTRACE_DSN       string
+	GIN_MODE          string
 }
 
 var Envs = initConfigs()
@@ -40,13 +42,17 @@ func initConfigs() config {
 		SECRET_KEY:        getEnv("SECRET_KEY", "https://acte.ltd/utils/randomkeygen"),
 		REFRESH_KEY:       getEnv("REFRESH_KEY", "https://randomkeygen.com/"),
 		RESEND_API_KEY:    getEnv("RESEND_API_KEY", ""),
+		UPTRACE_DSN:       getEnv("UPTRACE_DSN", ""),
+		GIN_MODE:          getEnv("GIN_MODE", "release"),
 	}
 }
 
 // getEnv retrieves an environment variable or returns the fallback string
 func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
+	key, ok := os.LookupEnv(key)
+	if !ok {
+		log.Printf("%v key not found, using default value", key)
+		return fallback
 	}
-	return fallback
+	return key
 }

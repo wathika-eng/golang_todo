@@ -25,7 +25,10 @@ type UserHandler struct {
 
 // constructor
 func NewUserHandler(userRepo *repository.UserRepo, userServices services.Auth) *UserHandler {
-	return &UserHandler{userRepo: userRepo, userServices: userServices}
+	return &UserHandler{
+		userRepo:     userRepo,
+		userServices: userServices,
+	}
 }
 
 var (

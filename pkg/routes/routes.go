@@ -3,9 +3,11 @@ package routes
 import (
 	"golang_todo/pkg/config"
 	"golang_todo/pkg/handlers"
+	"golang_todo/pkg/middleware"
 	"golang_todo/pkg/repository"
 	"golang_todo/pkg/services"
 	notesservices "golang_todo/pkg/services/notes_services"
+	redisservices "golang_todo/pkg/services/redis"
 
 	"github.com/gin-gonic/gin"
 	"github.com/uptrace/bun"
@@ -14,6 +16,7 @@ import (
 var secretKey = config.Envs.SECRET_KEY
 var refreshKey = config.Envs.REFRESH_KEY
 var resendApiKey = config.Envs.RESEND_API_KEY
+var redisURL = config.Envs
 
 func SetupRoutes(s *gin.Engine, db *bun.DB) {
 	userRepo := repository.NewUserRepo(db)
@@ -30,9 +33,10 @@ func SetupRoutes(s *gin.Engine, db *bun.DB) {
 
 	notesRepo := repository.NewNotesRepo(db)
 	notesServices := notesservices.NewNotesServices()
-	notesHandler := handlers.NewNotesHandler(notesRepo, notesServices)
+	redisServices := redisservices.NewRedisClient()
+	notesHandler := handlers.NewNotesHandler(notesRepo, notesServices, redisServices)
 	notes := api.Group("/notes")
-	// notes.Use(middleware.AuthMiddleware(services))
+	notes.Use(middleware.AuthMiddleware(services))
 	{
 		notes.GET("/profile")
 		notes.GET("/test", notesHandler.NotesTest)
