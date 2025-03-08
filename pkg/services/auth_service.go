@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/resend/resend-go/v2"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -17,7 +18,7 @@ type UserServices struct {
 }
 
 type Auth interface {
-	GenerateToken(UserID uint, email string, userRole string, isRefresh bool) (string, string, error)
+	GenerateToken(UserID uuid.UUID, email string, userRole string, isRefresh bool) (string, string, error)
 	ValidateToken(token string, isRefresh bool) (*jwt.Token, error)
 	HashPassword(password string) (string, error)
 	CheckPassword(userPass string, password string) error
@@ -44,11 +45,12 @@ func (s *UserServices) CheckPassword(userPass string, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(userPass), []byte(password))
 }
 
-func (s *UserServices) GenerateToken(userID uint, email string, userRole string, isRefresh bool) (string, string, error) {
+func (s *UserServices) GenerateToken(userID uuid.UUID, email string, userRole string, isRefresh bool) (string, string, error) {
 	secret := s.secretKey
 	if isRefresh {
 		secret = s.refreshKey
 	}
+	fmt.Println(userID)
 	access_token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": userID,
 		"role":    userRole,

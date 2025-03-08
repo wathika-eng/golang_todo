@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"golang_todo/pkg/types"
 
+	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 )
 
@@ -25,7 +26,7 @@ func (r *NotesRepository) InsertNotes(notes types.Note) error {
 	return nil
 }
 
-func (r *NotesRepository) GetAllNotes(userID uint) ([]types.Note, error) {
+func (r *NotesRepository) GetAllNotes(userID uuid.UUID) ([]types.Note, error) {
 	var notes []types.Note
 	err := r.db.NewSelect().Model(&notes).Where("user_id = ?", userID).Scan(ctx)
 	if err != nil {
@@ -34,7 +35,7 @@ func (r *NotesRepository) GetAllNotes(userID uint) ([]types.Note, error) {
 	return notes, nil
 }
 
-func (r *NotesRepository) GetNoteByID(notesID uint) (*types.Note, error) {
+func (r *NotesRepository) GetNoteByID(notesID uuid.UUID) (*types.Note, error) {
 	var notes types.Note
 	err := r.db.NewSelect().Model(&notes).Where("id = ?", notesID).Scan(ctx)
 	if err != nil {

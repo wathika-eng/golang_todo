@@ -1,7 +1,7 @@
 -- +goose Up
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) NOT NULL UNIQUE CHECK (email LIKE '%@gmail.com'),
     role VARCHAR(50) NOT NULL DEFAULT 'user',
     password TEXT NOT NULL CHECK (LENGTH(password) > 8),

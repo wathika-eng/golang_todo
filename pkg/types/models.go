@@ -10,7 +10,7 @@ import (
 type User struct {
 	bun.BaseModel `bun:"table:users,alias:u"`
 
-	ID         uint       `json:"user_id" bun:",pk,type:uuid,default:uuid_generate_v7()"`
+	ID         uuid.UUID  `json:"user_id" bun:",pk,type:uuid,default:uuid_generate_v4()"`
 	Email      string     `json:"email" binding:"required,email,contains=@gmail.com" bun:"email,notnull,unique"`
 	Role       string     `json:"role" bun:"default:'user'"`
 	Password   string     `json:"password" binding:"required,gt=8" bun:"password,notnull"`
@@ -29,5 +29,5 @@ type Note struct {
 	Created_At time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	Updated_At *time.Time `bun:"updated_at,nullzero,default:current_timestamp"`
 	DeletedAt  *time.Time `bun:"deleted_at,soft_delete,nullzero"`
-	UserID     uint       `json:"user_id" bun:"user_id,notnull"`
+	UserID     uuid.UUID  `json:"user_id" bun:"user_id,notnull"`
 }

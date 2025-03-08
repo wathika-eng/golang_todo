@@ -7,11 +7,11 @@ import (
 	redisservices "golang_todo/pkg/services/redis"
 	"golang_todo/pkg/types"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type NotesHandler struct {
@@ -39,6 +39,7 @@ func (h *NotesHandler) CreateNotes(c *gin.Context) {
 		})
 		return
 	}
+
 	var notes types.Note
 	err := c.ShouldBindBodyWithJSON(&notes)
 	if err != nil {
@@ -48,7 +49,7 @@ func (h *NotesHandler) CreateNotes(c *gin.Context) {
 		})
 		return
 	}
-	notes.UserID = userID.(uint)
+	notes.UserID = userID.(uuid.UUID)
 	fmt.Println(notes.UserID)
 	err = h.NotesRepo.InsertNotes(notes)
 	if err != nil {
@@ -74,8 +75,7 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 		})
 		return
 	}
-	fmt.Println(userID.(uint))
-	notes, err := h.NotesRepo.GetAllNotes(userID.(uint))
+	notes, err := h.NotesRepo.GetAllNotes(userID.(uuid.UUID))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   true,
@@ -100,8 +100,8 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 // read
 func (h *NotesHandler) GetNoteByID(c *gin.Context) {
 	id := strings.TrimSpace(c.Param("id"))
-	uintID, err := strconv.Atoi(id)
-	if err != nil || uintID < 0 {
+	uintID, err := uuid.Parse(id)
+	if err != nil {
 		errM := fmt.Sprintf("could not convert %v to integer: %v", id, err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 
@@ -110,8 +110,8 @@ func (h *NotesHandler) GetNoteByID(c *gin.Context) {
 		})
 		return
 	}
-	notes, err := h.NotesRepo.GetNoteByID(uint(uintID))
-	if err != nil || uintID <= 0 {
+	notes, err := h.NotesRepo.GetNoteByID(uintID)
+	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   true,
 			"message": err.Error(),

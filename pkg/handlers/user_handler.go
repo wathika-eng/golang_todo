@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golodash/galidator"
+	"github.com/google/uuid"
 )
 
 // This allows all methods in UserHandler to access
@@ -145,7 +146,7 @@ func (h *UserHandler) RefreshAccess(c *gin.Context) {
 		})
 		return
 	}
-	userID, email, role := claims["user_id"].(uint), claims["sub"].(string), claims["role"].(string)
+	userID, email, role := claims["user_id"].(uuid.UUID), claims["sub"].(string), claims["role"].(string)
 	newAccessToken, newRefreshToken, err := h.userServices.GenerateToken(userID, email, role, true)
 	if err != nil {
 		c.AbortWithStatusJSON(400, gin.H{

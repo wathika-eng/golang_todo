@@ -23,9 +23,9 @@ func StartServer() {
 	db := config.InitDB()
 
 	// Run migrations once
-	//migrations.Migrate(db)
+	migrations.Migrate(db)
 	// drop and recreate the DB
-	migrations.Drop(db)
+	//migrations.Drop(db)
 	// Set up Gin server
 	server := gin.Default()
 	// Inject DB into routesr)

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"golang_todo/pkg/services"
 	redisservices "golang_todo/pkg/services/redis"
 	"golang_todo/pkg/types"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/uptrace/bun"
 )
 
@@ -50,7 +52,8 @@ func AuthMiddleware(authService services.Auth, db *bun.DB, redisService redisser
 			})
 			return
 		}
-		userID, exists := claims["user_id"].(float64)
+		fmt.Println(claims)
+		userIDStr, exists := claims["user_id"].(string)
 		if !exists {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   true,
@@ -58,6 +61,10 @@ func AuthMiddleware(authService services.Auth, db *bun.DB, redisService redisser
 			})
 			return
 		}
+		userID, _ := uuid.Parse(userIDStr)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("invalid user_id format: %v", err)
+		// }
 		// bug when db is dropped, token is still valid
 		var user types.User
 		err = db.NewSelect().Model(&user).Where("id = ?", userID).Scan(context.Background())
@@ -68,7 +75,7 @@ func AuthMiddleware(authService services.Auth, db *bun.DB, redisService redisser
 		expUnix := int64(claims["exp"].(float64))
 		expirationTime := time.Until(time.Unix(expUnix, 0))
 		// Store userID in context
-		c.Set("user_id", uint(userID))
+		c.Set("user_id", userID)
 		c.Set("exp_time", expirationTime)
 		c.Set("user_token", token)
 		c.Next()
