@@ -6,6 +6,7 @@ import (
 	notesservices "golang_todo/pkg/services/notes_services"
 	redisservices "golang_todo/pkg/services/redis"
 	"golang_todo/pkg/types"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -50,7 +51,6 @@ func (h *NotesHandler) CreateNotes(c *gin.Context) {
 		return
 	}
 	notes.UserID = userID.(uuid.UUID)
-	fmt.Println(notes.UserID)
 	err = h.NotesRepo.InsertNotes(notes)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -75,13 +75,27 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 		})
 		return
 	}
-	notes, err := h.NotesRepo.GetAllNotes(userID.(uuid.UUID))
+
+	notes, err := h.redisServices.FetchFromCache(userID.(uuid.UUID))
+	if err == nil || len(notes) != 0 {
+		c.Header("X-Cache-Status", "HIT")
+		c.JSON(200, gin.H{
+			"error": false,
+			"todos": notes,
+		})
+		return
+	}
+	notes, err = h.NotesRepo.GetAllNotes(userID.(uuid.UUID))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   true,
 			"message": err.Error(),
 		})
 		return
+	}
+	err = h.redisServices.CacheTodo(notes, userID.(uuid.UUID))
+	if err != nil {
+		log.Printf("could not cache todo: %v", err.Error())
 	}
 	if len(notes) <= 0 {
 		c.JSON(200, gin.H{
@@ -91,6 +105,7 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 		})
 		return
 	}
+	c.Header("X-Cache-Status", "MISS")
 	c.JSON(200, gin.H{
 		"error": false,
 		"todos": notes,
@@ -102,7 +117,7 @@ func (h *NotesHandler) GetNoteByID(c *gin.Context) {
 	id := strings.TrimSpace(c.Param("id"))
 	uintID, err := uuid.Parse(id)
 	if err != nil {
-		errM := fmt.Sprintf("could not convert %v to integer: %v", id, err.Error())
+		errM := fmt.Sprintf("could not convert %v to uuid: %v", id, err.Error())
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 
 			"error":   true,
@@ -110,6 +125,7 @@ func (h *NotesHandler) GetNoteByID(c *gin.Context) {
 		})
 		return
 	}
+	//to implement cache later
 	notes, err := h.NotesRepo.GetNoteByID(uintID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -126,12 +142,83 @@ func (h *NotesHandler) GetNoteByID(c *gin.Context) {
 
 // update
 func (h *NotesHandler) UpdateNotes(c *gin.Context) {
+	id := strings.TrimSpace(c.Param("id"))
+	userID, _ := c.Get("user_id")
+	uintID, err := uuid.Parse(id)
+	if err != nil {
+		errM := fmt.Sprintf("could not convert %v to uuid: %v", id, err.Error())
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 
+			"error":   true,
+			"message": errM,
+		})
+		return
+	}
+	var toUpdateFields map[string]interface{}
+	err = c.ShouldBindJSON(&toUpdateFields)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": "Invalid request body",
+		})
+		return
+	}
+	if body, ok := toUpdateFields["body"].(string); ok {
+		cleanedBody := strings.TrimSpace(body)
+		if cleanedBody == "" {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"error":   true,
+				"message": "Note body cannot be empty or whitespace",
+			})
+			return
+		}
+		toUpdateFields["body"] = cleanedBody
+	}
+
+	newTodo, err := h.NotesRepo.UpdateWithID(uintID, toUpdateFields)
+	if err != nil || newTodo == nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": err.Error(),
+		})
+		return
+	}
+	h.redisServices.DeleteCache(userID.(uuid.UUID))
+	c.JSON(200, gin.H{
+		"error":   false,
+		"message": "updated todo successfully",
+		"todo":    newTodo,
+	})
 }
 
 // delete
 func (h *NotesHandler) DeleteNotes(c *gin.Context) {
+	id := strings.TrimSpace(c.Param("id"))
+	userID, _ := c.Get("user_id")
+	uintID, err := uuid.Parse(id)
+	if err != nil {
+		errM := fmt.Sprintf("could not convert %v to uuid: %v", id, err.Error())
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 
+			"error":   true,
+			"message": errM,
+		})
+		return
+	}
+	ok, err := h.NotesRepo.DeleteWithID(uintID)
+	if err != nil || !ok {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": err.Error(),
+		})
+		return
+	}
+	h.redisServices.DeleteCache(userID.(uuid.UUID))
+	c.JSON(200, gin.H{
+		"error":   false,
+		"message": "deleted todo successfully",
+		"todo":    "[]",
+	})
 }
 
 func GetUserDetails(c *gin.Context) {

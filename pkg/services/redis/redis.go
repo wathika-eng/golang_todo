@@ -1,11 +1,14 @@
 package redisservices
 
 import (
+	"encoding/json"
 	"fmt"
+	"golang_todo/pkg/types"
 	"log"
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/google/uuid"
 )
 
 type RedisService struct {
@@ -16,6 +19,9 @@ type RedisService struct {
 type Redis interface {
 	BlackListToken(string, time.Duration) error
 	IsTokenBlacklisted(string) bool
+	FetchFromCache(id uuid.UUID) ([]types.Note, error)
+	CacheTodo(todo interface{}, id uuid.UUID) error
+	DeleteCache(id uuid.UUID) error
 }
 
 func NewRedisClient(redisURL string) Redis {
@@ -51,4 +57,28 @@ func (r *RedisService) IsTokenBlacklisted(token string) bool {
 		return false
 	}
 	return true // token is blacklisted
+}
+
+func (r *RedisService) FetchFromCache(id uuid.UUID) ([]types.Note, error) {
+	cachedTodo, err := r.Client.Get(id.String()).Result()
+	if err == nil {
+		var todo []types.Note
+		if json.Unmarshal([]byte(cachedTodo), &todo) == nil {
+			return todo, nil
+		}
+	}
+	return nil, err
+}
+
+func (r *RedisService) CacheTodo(todo interface{}, id uuid.UUID) error {
+	notesJson, err := json.Marshal(todo)
+	if err != nil {
+		return fmt.Errorf("could not cache the todo: %v", id)
+	}
+	r.Client.Set(id.String(), notesJson, 1*time.Hour)
+	return redis.Nil
+}
+
+func (r *RedisService) DeleteCache(id uuid.UUID) error {
+	return r.Client.Del(id.String()).Err()
 }

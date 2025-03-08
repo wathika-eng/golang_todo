@@ -35,12 +35,19 @@ func (r *UserRepo) InsertUser(user types.User) error {
 
 func (r *UserRepo) GetUserByEmail(email string) (*types.User, error) {
 	var user types.User
-	err := r.db.NewSelect().Model(&user).Where("email = ?", email).Scan(ctx)
+
+	err := r.db.NewSelect().
+		Model(&user).
+		Where("email = ?", email).
+		Relation("Notes"). // Preload the Notes (todos)
+		Scan(ctx)
+
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("user not found")
 		}
 		return nil, fmt.Errorf("error fetching user by email: %v", err)
 	}
+
 	return &user, nil
 }

@@ -35,11 +35,47 @@ func (r *NotesRepository) GetAllNotes(userID uuid.UUID) ([]types.Note, error) {
 	return notes, nil
 }
 
-func (r *NotesRepository) GetNoteByID(notesID uuid.UUID) (*types.Note, error) {
-	var notes types.Note
-	err := r.db.NewSelect().Model(&notes).Where("id = ?", notesID).Scan(ctx)
+func (r *NotesRepository) GetNoteByID(noteID uuid.UUID) (*types.Note, error) {
+	var note types.Note
+	err := r.db.NewSelect().Model(&note).Where("id = ?", noteID).Limit(1).Scan(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't get notes with id: %v", notesID)
+		return nil, fmt.Errorf("couldn't get notes with id: %v", noteID)
 	}
-	return &notes, nil
+	return &note, nil
+}
+
+func (r *NotesRepository) UpdateWithID(noteID uuid.UUID, updatedFields map[string]interface{}) (*types.Note, error) {
+	note, err := r.GetNoteByID(noteID)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get note with id %v: %w", noteID, err)
+	}
+
+	if len(updatedFields) == 0 {
+		return nil, fmt.Errorf("no fields to update")
+	}
+
+	query := r.db.NewUpdate().Model(note).WherePK()
+	for field, value := range updatedFields {
+		query = query.Set(fmt.Sprintf("%s = ?", field), value)
+	}
+
+	_, err = query.Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error updating note: %w", err)
+	}
+	return r.GetNoteByID(noteID)
+}
+
+func (r *NotesRepository) DeleteWithID(noteID uuid.UUID) (bool, error) {
+	var note types.Note
+	_, err := r.GetNoteByID(noteID)
+	if err != nil {
+		return false, fmt.Errorf("couldn't get note with id: %v", noteID)
+	}
+	_, err = r.db.NewDelete().Model(&note).Where("id = ?", noteID).Exec(ctx)
+	if err != nil {
+		return false, fmt.Errorf("error deleting note: %w", err)
+	}
+
+	return true, nil
 }
