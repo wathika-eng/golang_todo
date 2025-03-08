@@ -46,7 +46,7 @@ func (h *NotesHandler) CreateNotes(c *gin.Context) {
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   true,
-			"message": notesValidator.DecryptErrors(err),
+			"message": err.Error(),
 		})
 		return
 	}

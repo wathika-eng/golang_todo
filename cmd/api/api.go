@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// starts the server in a go routine
 func StartServer() {
 	logging.InitLogger(config.Envs.UPTRACE_DSN)
 

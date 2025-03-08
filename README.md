@@ -36,3 +36,10 @@ go run main.go
 ```
 
 Frontend => 
+
+## Resources
+https://12factor.net/
+
+https://threedots.tech/post/repository-pattern-in-go/
+
+https://jub0bs.com/posts/

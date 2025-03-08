@@ -11,7 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/golodash/galidator"
 	"github.com/google/uuid"
 )
 
@@ -31,11 +30,11 @@ func NewUserHandler(userRepo *repository.UserRepo, userServices services.Auth) *
 	}
 }
 
-var (
-	g              = galidator.G()
-	userValidator  = g.Validator(types.User{})
-	notesValidator = g.Validator(types.Note{})
-)
+// var (
+// 	g              = galidator.G()
+// 	userValidator  = g.Validator(types.User{})
+// 	notesValidator = g.Validator(types.Note{})
+// )
 
 func (h *UserHandler) SignUp(c *gin.Context) {
 	//c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private")
@@ -79,7 +78,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   true,
-			"message": userValidator.DecryptErrors(err),
+			"message": err.Error(),
 		})
 		return
 	}
