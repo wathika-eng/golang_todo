@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,6 +30,17 @@ func StartServer() {
 	//migrations.Drop(db)
 	// Set up Gin server
 	server := gin.Default()
+	server.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://127.0.0.1:5500"},
+		AllowMethods:     []string{"GET", "DELETE", "POST", "PATCH"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		// AllowOriginFunc: func(origin string) bool {
+		// 	return origin == "https://github.com"
+		// },
+		MaxAge: 12 * time.Hour,
+	}))
 	// Inject DB into routesr)
 	routes.SetupRoutes(server, db)
 	var PORT string = config.Envs.SERVER_PORT

@@ -39,7 +39,7 @@ func NewUserHandler(userRepo *repository.UserRepo, userServices services.Auth) *
 func (h *UserHandler) SignUp(c *gin.Context) {
 	//c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private")
 	var user types.User
-	err := c.ShouldBindJSON(&user)
+	err := c.ShouldBindBodyWithJSON(&user)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error":   true,
