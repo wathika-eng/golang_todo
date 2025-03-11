@@ -30,13 +30,13 @@ func NewRedisClient(redisURL string) Redis {
 		Password: "",       // No password by default
 		DB:       0,
 	})
-	_, err := client.Ping().Result()
+	r, err := client.Ping().Result()
 	if err != nil {
-		log.Println("Failed to connect to Redis:", err)
-		return nil
+		// exit if no redis client
+		log.Fatal("Failed to connect to Redis:", err)
 	}
 
-	log.Println("Connected to Redis")
+	log.Printf("Connected to Redis: %v", r)
 	return &RedisService{
 		redisURL: redisURL,
 		Client:   client,
@@ -47,16 +47,22 @@ func (r *RedisService) BlackListToken(token string, exp time.Duration) error {
 	return r.Client.Set(token, "blacklisted", exp).Err()
 }
 
+// panics if no redis client
 func (r *RedisService) IsTokenBlacklisted(token string) bool {
+	if r.Client == nil {
+		fmt.Println("Redis client is not initialized")
+		return false
+	}
+
 	_, err := r.Client.Get(token).Result()
 	if err == redis.Nil {
-		return false // Token is not blacklisted
+		return false
 	}
 	if err != nil {
 		fmt.Println("Redis error:", err)
 		return false
 	}
-	return true // token is blacklisted
+	return true
 }
 
 func (r *RedisService) FetchFromCache(id uuid.UUID) ([]types.Note, error) {
@@ -73,10 +79,14 @@ func (r *RedisService) FetchFromCache(id uuid.UUID) ([]types.Note, error) {
 func (r *RedisService) CacheTodo(todo interface{}, id uuid.UUID) error {
 	notesJson, err := json.Marshal(todo)
 	if err != nil {
-		return fmt.Errorf("could not cache the todo: %v", id)
+		return fmt.Errorf("error while marshalling the todo: %v", id)
 	}
-	r.Client.Set(id.String(), notesJson, 1*time.Hour)
-	return redis.Nil
+	status, err := r.Client.Set(id.String(), notesJson, 1*time.Hour).Result()
+	if err != nil {
+		fmt.Errorf("unable to set cache key and value: %v", err)
+	}
+	log.Printf("cached: %v\n", status)
+	return nil
 }
 
 func (r *RedisService) DeleteCache(id uuid.UUID) error {

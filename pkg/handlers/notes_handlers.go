@@ -103,7 +103,7 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 	}
 	err = h.redisServices.CacheTodo(notes, userID.(uuid.UUID))
 	if err != nil {
-		log.Printf("could not cache todo: %v", err.Error())
+		log.Printf("error while trying to cache: %v", err.Error())
 	}
 
 	c.Header("X-Cache-Status", "MISS")
