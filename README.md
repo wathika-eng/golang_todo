@@ -45,21 +45,23 @@ Get a free postgresql database from <https://neon.tech/> and add the database ur
 ```bash
 go run main.go
 ```
+
 Or with docker:
 
 ```bash
 COMPOSE_BAKE=true docker compose up -d --build
 ```
 
-Access the API via: http://localhost:8000/api/users/test
+Access the API via: <http://localhost:8000/api/users/test>
 
-Or http://localhost/api/users/test if you are using docker
+Or <http://localhost/api/users/test> if you are using docker
 
-Online: 
+Live URL => <http://100.118.113.102:8000/api/users/test>
 
 Frontend =>
 
 Routes:
+
 ```json
 [GIN-debug] GET    /api/users/test           
 [GIN-debug] POST   /api/users/signup         
