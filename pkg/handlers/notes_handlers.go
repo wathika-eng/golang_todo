@@ -93,10 +93,6 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 		})
 		return
 	}
-	err = h.redisServices.CacheTodo(notes, userID.(uuid.UUID))
-	if err != nil {
-		log.Printf("could not cache todo: %v", err.Error())
-	}
 	if len(notes) <= 0 {
 		c.JSON(200, gin.H{
 			"error":   false,
@@ -105,6 +101,11 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 		})
 		return
 	}
+	err = h.redisServices.CacheTodo(notes, userID.(uuid.UUID))
+	if err != nil {
+		log.Printf("could not cache todo: %v", err.Error())
+	}
+
 	c.Header("X-Cache-Status", "MISS")
 	c.JSON(200, gin.H{
 		"error": false,

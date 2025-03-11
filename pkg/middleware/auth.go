@@ -35,13 +35,7 @@ func AuthMiddleware(authService services.Auth, db *bun.DB, redisService redisser
 			})
 			return
 		}
-		if redisService.IsTokenBlacklisted(token) {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   true,
-				"message": "token revoked",
-			})
-			return
-		}
+
 		// extract token
 		claims, ok := verifiedToken.Claims.(jwt.MapClaims)
 		if !ok {
@@ -61,6 +55,13 @@ func AuthMiddleware(authService services.Auth, db *bun.DB, redisService redisser
 			return
 		}
 		userID, _ := uuid.Parse(userIDStr)
+		if redisService.IsTokenBlacklisted(token) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error":   true,
+				"message": "token revoked",
+			})
+			return
+		}
 		// if err != nil {
 		// 	return nil, fmt.Errorf("invalid user_id format: %v", err)
 		// }
