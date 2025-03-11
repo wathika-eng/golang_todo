@@ -59,6 +59,7 @@ func (h *NotesHandler) CreateNotes(c *gin.Context) {
 		})
 		return
 	}
+	h.redisServices.DeleteCache(userID.(uuid.UUID))
 	c.JSON(201, gin.H{
 		"error":   false,
 		"message": "Notes created successfulyy",

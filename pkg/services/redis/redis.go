@@ -83,7 +83,7 @@ func (r *RedisService) CacheTodo(todo interface{}, id uuid.UUID) error {
 	}
 	status, err := r.Client.Set(id.String(), notesJson, 1*time.Hour).Result()
 	if err != nil {
-		fmt.Errorf("unable to set cache key and value: %v", err)
+		return fmt.Errorf("unable to set cache key and value: %v", err)
 	}
 	log.Printf("cached: %v\n", status)
 	return nil
