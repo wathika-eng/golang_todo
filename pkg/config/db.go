@@ -33,6 +33,7 @@ func InitDB() *bun.DB {
 		nErr := fmt.Sprintf("Error connecting to the database: %v", err.Error())
 		logging.Logger.Error(nErr)
 		os.Exit(1)
+		return nil
 	}
 	if err := healthCheck(sqldb); err != nil {
 		logging.Logger.Error(err.Error())

@@ -29,5 +29,5 @@ type Note struct {
 	Created_At time.Time  `bun:"created_at,notnull,default:current_timestamp"`
 	Updated_At *time.Time `bun:"updated_at,nullzero,default:current_timestamp"`
 	DeletedAt  *time.Time `bun:"deleted_at,soft_delete,nullzero"`
-	UserID     uuid.UUID  `json:"user_id" bun:"user_id,notnull"`
+	UserID     uuid.UUID  `json:"user_id" bun:"type:uuid,user_id,notnull"`
 }

@@ -1,0 +1,30 @@
+# Ignore vendor (if using Go modules)
+vendor/
+
+# Ignore temporary files and logs
+*.log
+*.out
+*.exe
+*.test
+*.swp
+*.swo
+*.DS_Store
+
+# Ignore version control files
+.git/
+.gitignore
+.gitattributes
+
+# Ignore IDE/editor files
+.vscode/
+.idea/
+*.iml
+
+# Ignore dependency management files
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Ignore environment variables
+# .env
+# .env.*

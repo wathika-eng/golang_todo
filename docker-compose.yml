@@ -1,0 +1,61 @@
+services:
+  db:
+    image: postgres:17-alpine
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+    container_name: postgres_db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - mynetwork
+
+  redis:
+    image: redis:alpine
+    container_name: redis_cache
+    restart: always
+    networks:
+      - mynetwork
+
+  app:
+    build: .
+    container_name: go_app
+    restart: always
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${CONNECTION_STRING}
+      GOOSE_DBSTRING: ${GOOSE_DBSTRING}
+      SERVER_PORT: ${SERVER_PORT}
+    networks:
+      - mynetwork
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    restart: always
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    networks:
+      - mynetwork
+
+volumes:
+  pgdata:
+
+
+networks:
+  mynetwork:
+    driver: bridge

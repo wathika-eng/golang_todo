@@ -13,8 +13,13 @@ import (
 var ctx = context.Background()
 
 func Migrate(db *bun.DB) {
+	_, err := db.ExecContext(ctx, `CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`)
+	if err != nil {
+		logging.Logger.Error(fmt.Sprintf("❌ Failed to enable uuid-ossp extension: %v", err))
+		os.Exit(1)
+	}
 	// users table
-	_, err := db.NewCreateTable().IfNotExists().
+	_, err = db.NewCreateTable().IfNotExists().
 		Model((*types.User)(nil)).Exec(ctx)
 	if err != nil {
 		nErr := fmt.Sprintf("❌ Failed to create users table: %v", err.Error())

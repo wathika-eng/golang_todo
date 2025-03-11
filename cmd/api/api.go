@@ -31,7 +31,7 @@ func StartServer() {
 	// Set up Gin server
 	server := gin.Default()
 	server.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://127.0.0.1:5500"},
+		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "DELETE", "POST", "PATCH"},
 		AllowHeaders:     []string{"Origin"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -58,7 +58,7 @@ func StartServer() {
 
 	// Start server in a goroutine
 	go func() {
-		fmt.Printf("🚀 Server running on http://localhost:%s\n", PORT)
+		fmt.Printf("🚀 Server running on http://localhost:%s/api/users/test\n", PORT)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logging.Logger.Warn("Server failed", "error", err)
 		}
