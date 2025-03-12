@@ -56,7 +56,7 @@ Access the API via: <http://localhost:8000/api/users/test>
 
 Or <http://localhost/api/users/test> if you are using docker
 
-Live URL => <http://100.118.113.102:8000/api/users/test>
+Live URL => <http://157.230.108.128:8000/api/users/test>
 
 Frontend => <http://162.245.188.225:3000/>
 
