@@ -45,6 +45,7 @@ func SetupRoutes(s *gin.Engine, db *bun.DB) {
 		notes.PATCH("/:id", notesHandler.UpdateNotes)
 		notes.DELETE("/:id", notesHandler.DeleteNotes)
 		notes.POST("/logout", notesHandler.Logout)
+		notes.GET("/recent/del", notesHandler.RecentDeletions)
 	}
 	userProfile := api.Group("/profile")
 	userProfile.Use(middleware.AuthMiddleware(services, db, redisServices))

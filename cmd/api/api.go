@@ -31,18 +31,17 @@ func StartServer() {
 	// Set up Gin server
 	server := gin.Default()
 	server.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"http://162.245.188.225:3000/*"},
 		AllowMethods:     []string{"GET", "DELETE", "POST", "PATCH"},
-		AllowHeaders:     []string{"Origin"},
+		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		// AllowOriginFunc: func(origin string) bool {
-		// 	return origin == "https://github.com"
-		// },
-		MaxAge: 12 * time.Hour,
+		MaxAge:           12 * time.Hour,
 	}))
+
 	// Inject DB into routesr)
 	routes.SetupRoutes(server, db)
+	server.RemoveExtraSlash = true
 	var PORT string = config.Envs.SERVER_PORT
 	srv := &http.Server{
 		Addr:         ":" + PORT,
@@ -62,6 +61,7 @@ func StartServer() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logging.Logger.Warn("Server failed", "error", err)
 		}
+		defer db.Close()
 	}()
 
 	// Wait for termination signal

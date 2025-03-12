@@ -79,6 +79,7 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 
 	notes, err := h.redisServices.FetchFromCache(userID.(uuid.UUID))
 	if err == nil || len(notes) != 0 {
+		log.Println("fetched from cache")
 		c.Header("X-Cache-Status", "HIT")
 		c.JSON(200, gin.H{
 			"error": false,
@@ -106,7 +107,7 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 	if err != nil {
 		log.Printf("error while trying to cache: %v", err.Error())
 	}
-
+	log.Println("fetched from db")
 	c.Header("X-Cache-Status", "MISS")
 	c.JSON(200, gin.H{
 		"error": false,
@@ -223,8 +224,27 @@ func (h *NotesHandler) DeleteNotes(c *gin.Context) {
 	})
 }
 
-func GetUserDetails(c *gin.Context) {
-
+func (h *NotesHandler) RecentDeletions(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+	notes, err := h.NotesRepo.SoftDelete(userID.(uuid.UUID))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   true,
+			"message": err.Error(),
+		})
+		return
+	}
+	if len(notes) <= 0 {
+		c.JSON(200, gin.H{
+			"error":   false,
+			"message": "no recently deleted todos",
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"error": false,
+		"todos": notes,
+	})
 }
 
 func (h *NotesHandler) Logout(c *gin.Context) {

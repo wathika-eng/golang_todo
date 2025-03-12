@@ -57,7 +57,9 @@ func healthCheck(db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("❌ Database health check failed: %v", err)
 	}
-
+	db.SetConnMaxLifetime(5)
+	db.SetMaxIdleConns(5)
+	db.SetMaxOpenConns(5)
 	stats := db.Stats()
 	logging.Logger.Info(fmt.Sprintf("✅ Database is healthy (Ping Time: %v)", duration))
 	logging.Logger.Info(fmt.Sprintf("📊 DB Stats - Open Connections: %d, In Use: %d, Idle: %d, Wait Count: %d",

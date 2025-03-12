@@ -5,6 +5,7 @@ import (
 	"golang_todo/pkg/repository"
 	"golang_todo/pkg/services"
 	"golang_todo/pkg/types"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -106,12 +107,13 @@ func (h *UserHandler) Login(c *gin.Context) {
 		})
 		return
 	}
+	log.Println(refresh_token)
 
 	c.JSON(200, gin.H{
 		"error":         false,
 		"message":       "Access granted",
 		"access_token":  access_token,
-		"refresh_token": refresh_token,
+		"refresh_token": "",
 	})
 }
 

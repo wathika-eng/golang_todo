@@ -58,7 +58,7 @@ Or <http://localhost/api/users/test> if you are using docker
 
 Live URL => <http://100.118.113.102:8000/api/users/test>
 
-Frontend =>
+Frontend => <http://162.245.188.225:3000/>
 
 Routes:
 

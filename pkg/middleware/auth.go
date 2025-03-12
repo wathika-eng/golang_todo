@@ -23,7 +23,7 @@ func AuthMiddleware(authService services.Auth, db *bun.DB, redisService redisser
 				"error":   true,
 				"message": "missing auth header",
 			})
-			c.Redirect(http.StatusPermanentRedirect, "/login")
+			// c.Redirect(http.StatusPermanentRedirect, "/login")
 			return
 		}
 		token := strings.TrimPrefix(authHeader, "Bearer ")

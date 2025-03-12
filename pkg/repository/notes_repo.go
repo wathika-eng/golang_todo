@@ -68,14 +68,35 @@ func (r *NotesRepository) UpdateWithID(noteID uuid.UUID, updatedFields map[strin
 
 func (r *NotesRepository) DeleteWithID(noteID uuid.UUID) (bool, error) {
 	var note types.Note
+
 	_, err := r.GetNoteByID(noteID)
 	if err != nil {
 		return false, fmt.Errorf("couldn't get note with id: %v", noteID)
 	}
-	_, err = r.db.NewDelete().Model(&note).Where("id = ?", noteID).Exec(ctx)
+
+	_, err = r.db.NewUpdate().
+		Model(&note).
+		Set("deleted_at = NOW()").
+		Where("id = ?", noteID).
+		Exec(ctx)
 	if err != nil {
-		return false, fmt.Errorf("error deleting note: %w", err)
+		return false, fmt.Errorf("error soft-deleting note: %w", err)
 	}
 
 	return true, nil
+}
+
+func (r *NotesRepository) SoftDelete(userID uuid.UUID) ([]types.Note, error) {
+	var notes []types.Note
+
+	err := r.db.NewSelect().
+		Model(&notes).
+		Where("user_id = ?", userID).
+		Where("deleted_at IS NOT NULL").
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching recently deleted notes: %w", err)
+	}
+	fmt.Println(notes)
+	return notes, nil
 }
