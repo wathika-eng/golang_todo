@@ -58,7 +58,10 @@ Or <http://localhost/api/users/test> if you are using docker
 
 Live URL => <http://157.230.108.128:8000/api/users/test>
 
-Frontend => <http://162.245.188.225:3000/>
+Frontend => <https://vue-todo-nine-henna.vercel.app/>
+
+Login: `qowalu@gmail.com`
+Password: `Pa$$w0rd!`
 
 Routes:
 
