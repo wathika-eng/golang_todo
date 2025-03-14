@@ -17,7 +17,7 @@ type UserRepo struct {
 	db *bun.DB
 }
 
-// a constructor which ensures all db calls go through one place
+// NewUserRepo a constructor which ensures all db calls go through one place
 func NewUserRepo(db *bun.DB) *UserRepo {
 	return &UserRepo{db: db}
 }

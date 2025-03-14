@@ -3,9 +3,9 @@ package handlers
 import (
 	"fmt"
 	"golang_todo/pkg/repository"
+	"golang_todo/pkg/response"
 	"golang_todo/pkg/services"
 	"golang_todo/pkg/types"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -15,19 +15,22 @@ import (
 	"github.com/google/uuid"
 )
 
-// This allows all methods in UserHandler to access
+// UserHandler This allows all methods in UserHandler to access
 //
 //	database operations without directly interacting with the database.
 type UserHandler struct {
 	userRepo     *repository.UserRepo
 	userServices services.Auth
+	response     response.ResponseInterface
 }
 
-// constructor
-func NewUserHandler(userRepo *repository.UserRepo, userServices services.Auth) *UserHandler {
+// NewUserHandler constructor
+func NewUserHandler(userRepo *repository.UserRepo,
+	userServices services.Auth, response response.ResponseInterface) *UserHandler {
 	return &UserHandler{
 		userRepo:     userRepo,
 		userServices: userServices,
+		response:     response,
 	}
 }
 
@@ -42,77 +45,58 @@ func (h *UserHandler) SignUp(c *gin.Context) {
 	var user types.User
 	err := c.ShouldBindBodyWithJSON(&user)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		h.response.SendError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	hashedPassword, err := h.userServices.HashPassword(user.Password)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		h.response.SendError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	user.Password = hashedPassword
 	// _, _ = h.userServices.SendEmail(user.Email)
 	err = h.userRepo.InsertUser(user)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		h.response.SendError(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	c.JSON(201, gin.H{
-		"error":   false,
-		"message": fmt.Sprintf("user: %v created successfully", user.Email),
-	})
+	// use strings builder next
+	h.response.Success(c, http.StatusCreated, fmt.Sprintf("user %v created successfuly", user.Email))
 }
 
 func (h *UserHandler) Login(c *gin.Context) {
 	//c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private")
 	var user types.User
 	err := c.ShouldBindJSON(&user)
+	// don't check for blank passwords or greater than 100
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		h.response.SendError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	if len(strings.TrimSpace(user.Password)) <= 0 || len(user.Password) > 100 {
+		h.response.SendError(c, 400, "error with password length")
 		return
 	}
 	userFound, err := h.userRepo.GetUserByEmail(user.Email)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		h.response.SendError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	err = h.userServices.CheckPassword(userFound.Password, user.Password)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": "Wrong password!",
-		})
+		h.response.SendError(c, http.StatusBadRequest, "wrong password")
 		return
 	}
-	access_token, refresh_token, err := h.userServices.GenerateToken(userFound.ID, userFound.Email, user.Role, false)
+	accessToken, _, err := h.userServices.GenerateToken(userFound.ID, userFound.Email, user.Role, false)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": "Wrong password!",
-		})
+		h.response.SendError(c, http.StatusBadRequest, "wrong password")
 		return
 	}
-	log.Println(refresh_token)
 
 	c.JSON(200, gin.H{
 		"error":         false,
 		"message":       "Access granted",
-		"access_token":  access_token,
+		"access_token":  accessToken,
 		"refresh_token": "",
 	})
 }
@@ -123,36 +107,24 @@ func (h *UserHandler) RefreshAccess(c *gin.Context) {
 	}
 	err := c.ShouldBindBodyWithJSON(&req)
 	if err != nil || strings.TrimSpace(req.RefreshToken) == "" {
-		c.AbortWithStatusJSON(400, gin.H{
-			"error":   true,
-			"message": "refresh token not found",
-		})
+		h.response.SendError(c, http.StatusBadRequest, "refresh token not found")
 		return
 	}
 	validToken, err := h.userServices.ValidateToken(req.RefreshToken, true)
-	if err != nil || !validToken.Valid || validToken == nil {
+	if err != nil || !validToken.Valid {
 		// log.Println(err)
-		c.AbortWithStatusJSON(400, gin.H{
-			"error":   true,
-			"message": "refresh token is invalid",
-		})
+		h.response.SendError(c, http.StatusBadRequest, "refresh token is invalid")
 		return
 	}
 	claims, ok := validToken.Claims.(jwt.MapClaims)
 	if !ok {
-		c.AbortWithStatusJSON(400, gin.H{
-			"error":   true,
-			"message": "invalid token data",
-		})
+		h.response.SendError(c, http.StatusBadRequest, "invalid token")
 		return
 	}
 	userID, email, role := claims["user_id"].(uuid.UUID), claims["sub"].(string), claims["role"].(string)
 	newAccessToken, newRefreshToken, err := h.userServices.GenerateToken(userID, email, role, true)
 	if err != nil {
-		c.AbortWithStatusJSON(400, gin.H{
-			"error":   true,
-			"message": "failed to generate new tokens",
-		})
+		h.response.SendError(c, http.StatusBadRequest, "failed to generate new token")
 		return
 	}
 	c.JSON(200, gin.H{
@@ -163,7 +135,7 @@ func (h *UserHandler) RefreshAccess(c *gin.Context) {
 	})
 }
 
-func (r *UserHandler) UserProfile(c *gin.Context) {
+func (h *UserHandler) UserProfile(c *gin.Context) {
 	userEmail, exists := c.Get("user_email")
 	if !exists {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -172,7 +144,7 @@ func (r *UserHandler) UserProfile(c *gin.Context) {
 		})
 		return
 	}
-	userData, err := r.userRepo.GetUserByEmail(userEmail.(string))
+	userData, err := h.userRepo.GetUserByEmail(userEmail.(string))
 	if err != nil {
 		c.AbortWithStatusJSON(400, gin.H{
 			"error":   true,
@@ -186,9 +158,6 @@ func (r *UserHandler) UserProfile(c *gin.Context) {
 	})
 }
 
-func (r *UserHandler) UserTest(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "API is up and running",
-		"time":    time.Now().Local(),
-	})
+func (h *UserHandler) UserTest(c *gin.Context) {
+	h.response.Success(c, 200, time.Now().Local())
 }

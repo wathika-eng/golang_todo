@@ -5,6 +5,7 @@ import (
 	"golang_todo/pkg/handlers"
 	"golang_todo/pkg/middleware"
 	"golang_todo/pkg/repository"
+	"golang_todo/pkg/response"
 	"golang_todo/pkg/services"
 	notesservices "golang_todo/pkg/services/notes_services"
 	redisservices "golang_todo/pkg/services/redis"
@@ -13,15 +14,16 @@ import (
 	"github.com/uptrace/bun"
 )
 
-var secretKey = config.Envs.SECRET_KEY
-var refreshKey = config.Envs.REFRESH_KEY
-var resendApiKey = config.Envs.RESEND_API_KEY
-var redisURL = config.Envs.REDIS_URL
+var secretKey = config.Envs.SecretKey
+var refreshKey = config.Envs.RefreshKey
+var resendApiKey = config.Envs.ResendApiKey
+var redisURL = config.Envs.RedisUrl
 
 func SetupRoutes(s *gin.Engine, db *bun.DB) {
 	userRepo := repository.NewUserRepo(db)
-	services := services.NewUserServices([]byte(secretKey), []byte(refreshKey), resendApiKey)
-	userHandler := handlers.NewUserHandler(userRepo, services)
+	userServices := services.NewUserServices([]byte(secretKey), []byte(refreshKey), resendApiKey)
+	newResponse := response.NewResponse()
+	userHandler := handlers.NewUserHandler(userRepo, userServices, newResponse)
 	api := s.Group("/api")
 	users := api.Group("/users")
 	{
@@ -34,9 +36,9 @@ func SetupRoutes(s *gin.Engine, db *bun.DB) {
 	notesRepo := repository.NewNotesRepo(db)
 	notesServices := notesservices.NewNotesServices()
 	redisServices := redisservices.NewRedisClient(redisURL)
-	notesHandler := handlers.NewNotesHandler(notesRepo, notesServices, redisServices)
+	notesHandler := handlers.NewNotesHandler(notesRepo, notesServices, redisServices, newResponse)
 	notes := api.Group("/notes")
-	notes.Use(middleware.AuthMiddleware(services, db, redisServices))
+	notes.Use(middleware.AuthMiddleware(userServices, db, redisServices))
 	{
 		notes.GET("/test", notesHandler.NotesTest)
 		notes.POST("/create", notesHandler.CreateNotes)
@@ -48,7 +50,7 @@ func SetupRoutes(s *gin.Engine, db *bun.DB) {
 		notes.GET("/recent/del", notesHandler.RecentDeletions)
 	}
 	userProfile := api.Group("/profile")
-	userProfile.Use(middleware.AuthMiddleware(services, db, redisServices))
+	userProfile.Use(middleware.AuthMiddleware(userServices, db, redisServices))
 	{
 		userProfile.GET("/", userHandler.UserProfile)
 	}

@@ -47,7 +47,7 @@ func (r *RedisService) BlackListToken(token string, exp time.Duration) error {
 	return r.Client.Set(token, "blacklisted", exp).Err()
 }
 
-// panics if no redis client
+// IsTokenBlacklisted panics if no redis client
 func (r *RedisService) IsTokenBlacklisted(token string) bool {
 	if r.Client == nil {
 		fmt.Println("Redis client is not initialized")

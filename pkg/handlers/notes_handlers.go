@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"golang_todo/pkg/repository"
+	"golang_todo/pkg/response"
 	notesservices "golang_todo/pkg/services/notes_services"
 	redisservices "golang_todo/pkg/services/redis"
 	"golang_todo/pkg/types"
@@ -19,80 +20,63 @@ type NotesHandler struct {
 	NotesRepo     *repository.NotesRepository
 	NotesServices *notesservices.NotesServices
 	redisServices redisservices.Redis
+	response      response.ResponseInterface
 }
 
 func NewNotesHandler(notesRepo *repository.NotesRepository, notesServices *notesservices.NotesServices,
-	redisServices redisservices.Redis) *NotesHandler {
+	redisServices redisservices.Redis, response response.ResponseInterface) *NotesHandler {
 	return &NotesHandler{
 		NotesRepo:     notesRepo,
 		NotesServices: notesServices,
 		redisServices: redisServices,
+		response:      response,
 	}
 }
 
-// create
+// CreateNotes create
 func (h *NotesHandler) CreateNotes(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"error":   true,
-			"message": "unauthorized",
-		})
+		h.response.SendError(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	var notes types.Note
 	err := c.ShouldBindBodyWithJSON(&notes)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		h.response.SendError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	notes.UserID = userID.(uuid.UUID)
 	err = h.NotesRepo.InsertNotes(notes)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		h.response.SendError(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	h.redisServices.DeleteCache(userID.(uuid.UUID))
-	c.JSON(201, gin.H{
-		"error":   false,
-		"message": "Notes created successfulyy",
-	})
+	err = h.redisServices.DeleteCache(userID.(uuid.UUID))
+	if err != nil {
+		h.response.SendError(c, http.StatusInternalServerError, err.Error())
+	}
+	h.response.Success(c, 201, "note created successfuly")
 }
 
 // read
 func (h *NotesHandler) GetNotes(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"error":   true,
-			"message": "unauthorized",
-		})
+		h.response.SendError(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-
 	notes, err := h.redisServices.FetchFromCache(userID.(uuid.UUID))
 	if err == nil || len(notes) != 0 {
 		log.Println("fetched from cache")
 		c.Header("X-Cache-Status", "HIT")
-		c.JSON(200, gin.H{
-			"error": false,
-			"todos": notes,
-		})
+		h.response.Success(c, 200, notes)
 		return
 	}
 	notes, err = h.NotesRepo.GetAllNotes(userID.(uuid.UUID))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		h.response.SendError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	if len(notes) <= 0 {
@@ -104,15 +88,12 @@ func (h *NotesHandler) GetNotes(c *gin.Context) {
 		return
 	}
 	err = h.redisServices.CacheTodo(notes, userID.(uuid.UUID))
-	if err != nil {
-		log.Printf("error while trying to cache: %v", err.Error())
-	}
+	// if err != nil {
+	// 	log.Printf("error while trying to cache: %v", err.Error())
+	// }
 	log.Println("fetched from db")
 	c.Header("X-Cache-Status", "MISS")
-	c.JSON(200, gin.H{
-		"error": false,
-		"todos": notes,
-	})
+	h.response.Success(c, 200, notes)
 }
 
 // read
@@ -121,26 +102,19 @@ func (h *NotesHandler) GetNoteByID(c *gin.Context) {
 	uintID, err := uuid.Parse(id)
 	if err != nil {
 		errM := fmt.Sprintf("could not convert %v to uuid: %v", id, err.Error())
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-
-			"error":   true,
-			"message": errM,
-		})
+		h.response.SendError(c, http.StatusBadRequest, errM)
 		return
 	}
-	//to implement cache later
-	notes, err := h.NotesRepo.GetNoteByID(uintID)
+	note, err := h.NotesRepo.GetNoteByID(uintID)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		h.response.SendError(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	c.JSON(200, gin.H{
-		"error":   false,
-		"message": notes,
-	})
+	err = h.redisServices.CacheTodo(note, uintID)
+	if err != nil {
+		h.response.SendError(c, http.StatusInternalServerError, err.Error())
+	}
+	h.response.Success(c, 200, note)
 }
 
 // update
@@ -150,29 +124,19 @@ func (h *NotesHandler) UpdateNotes(c *gin.Context) {
 	uintID, err := uuid.Parse(id)
 	if err != nil {
 		errM := fmt.Sprintf("could not convert %v to uuid: %v", id, err.Error())
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-
-			"error":   true,
-			"message": errM,
-		})
+		h.response.SendError(c, http.StatusBadRequest, errM)
 		return
 	}
 	var toUpdateFields map[string]interface{}
 	err = c.ShouldBindJSON(&toUpdateFields)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": "Invalid request body",
-		})
+		h.response.SendError(c, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if body, ok := toUpdateFields["body"].(string); ok {
 		cleanedBody := strings.TrimSpace(body)
 		if cleanedBody == "" {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"error":   true,
-				"message": "Note body cannot be empty or whitespace",
-			})
+			h.response.SendError(c, http.StatusBadRequest, "body cannot be empty or blank")
 			return
 		}
 		toUpdateFields["body"] = cleanedBody
@@ -180,10 +144,7 @@ func (h *NotesHandler) UpdateNotes(c *gin.Context) {
 
 	newTodo, err := h.NotesRepo.UpdateWithID(uintID, toUpdateFields)
 	if err != nil || newTodo == nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		h.response.SendError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	h.redisServices.DeleteCache(userID.(uuid.UUID))
@@ -201,19 +162,12 @@ func (h *NotesHandler) DeleteNotes(c *gin.Context) {
 	uintID, err := uuid.Parse(id)
 	if err != nil {
 		errM := fmt.Sprintf("could not convert %v to uuid: %v", id, err.Error())
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-
-			"error":   true,
-			"message": errM,
-		})
+		h.response.SendError(c, 400, errM)
 		return
 	}
 	ok, err := h.NotesRepo.DeleteWithID(uintID)
 	if err != nil || !ok {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		h.response.SendError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	h.redisServices.DeleteCache(userID.(uuid.UUID))
@@ -228,10 +182,7 @@ func (h *NotesHandler) RecentDeletions(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 	notes, err := h.NotesRepo.SoftDelete(userID.(uuid.UUID))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   true,
-			"message": err.Error(),
-		})
+		h.response.SendError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	if len(notes) <= 0 {
@@ -241,10 +192,7 @@ func (h *NotesHandler) RecentDeletions(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(200, gin.H{
-		"error": false,
-		"todos": notes,
-	})
+	h.response.Success(c, 200, notes)
 }
 
 func (h *NotesHandler) Logout(c *gin.Context) {
@@ -287,8 +235,5 @@ func (h *NotesHandler) Logout(c *gin.Context) {
 }
 
 func (h *NotesHandler) NotesTest(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "notes API is up and running",
-		"time":    time.Now().Local(),
-	})
+	h.response.Success(c, 200, time.Now().Local())
 }

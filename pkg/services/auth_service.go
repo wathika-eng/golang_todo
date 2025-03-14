@@ -64,10 +64,10 @@ func (s *UserServices) GenerateToken(userID uuid.UUID, email string, userRole st
 		"sub":  email,
 		"exp":  time.Now().Add(time.Hour * 24 * 7).Unix(),
 	})
-	accessToken, At_err := access_token.SignedString(secret)
-	refreshToken, Rf_err := refresh_token.SignedString(secret)
-	if At_err != nil || Rf_err != nil {
-		return "", "", fmt.Errorf("error generating tokens: %v %v", At_err, Rf_err)
+	accessToken, AtErr := access_token.SignedString(secret)
+	refreshToken, RfErr := refresh_token.SignedString(secret)
+	if AtErr != nil || RfErr != nil {
+		return "", "", fmt.Errorf("error generating tokens: %v %v", AtErr, RfErr)
 	}
 	return accessToken, refreshToken, nil
 }

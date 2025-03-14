@@ -2,13 +2,20 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/uptrace/bun"
 	"golang_todo/pkg/config"
 	logging "golang_todo/pkg/logger"
 	"golang_todo/pkg/migrations"
+	"sync"
+
+	//"golang_todo/pkg/migrations"
+
 	"golang_todo/pkg/routes"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"time"
@@ -17,32 +24,58 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// starts the server in a go routine
+var once sync.Once
+
+func doOnce(f func()) {
+	once.Do(f)
+}
+
+// StartServer starts the server in a go routine
 func StartServer() {
-	logging.InitLogger(config.Envs.UPTRACE_DSN)
+
+	logging.InitLogger(config.Envs.UptraceDsn)
 
 	// Initialize the database
-	db := config.InitDB()
-
+	db, err := config.InitDB()
+	if err != nil {
+		panic(err)
+	}
 	// Run migrations once
-	migrations.Migrate(db)
+	doOnce(func() {
+		log.Println("running migrations")
+		migrations.Migrate(db)
+	})
 	// drop and recreate the DB
 	//migrations.Drop(db)
 	// Set up Gin server
 	server := gin.Default()
 	server.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://162.245.188.225:3000/*"},
-		AllowMethods:     []string{"GET", "DELETE", "POST", "PATCH"},
+		AllowOrigins: []string{"*"},
+		AllowOriginFunc: func(origin string) bool {
+			// Allow specific origins
+			allowedOrigins := []string{
+				"http://162.245.188.225",
+				"https://vue-todo-nine-henna.vercel.app",
+				"http://localhost:3000",
+			}
+			for _, allowedOrigin := range allowedOrigins {
+				if origin == allowedOrigin {
+					return true
+				}
+			}
+			return false
+		},
+		AllowMethods:     []string{"GET", "DELETE", "POST", "PATCH", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// Inject DB into routesr)
+	// Inject DB into router
 	routes.SetupRoutes(server, db)
 	server.RemoveExtraSlash = true
-	var PORT string = config.Envs.SERVER_PORT
+	var PORT string = config.Envs.ServerPort
 	srv := &http.Server{
 		Addr:         ":" + PORT,
 		Handler:      server,
@@ -58,12 +91,14 @@ func StartServer() {
 	// Start server in a goroutine
 	go func() {
 		fmt.Printf("🚀 Server running on http://localhost:%s/api/users/test\n", PORT)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logging.Logger.Warn("Server failed", "error", err)
 		}
-		defer db.Close()
+		// defer db.Close()
 	}()
-
+	// go func() {
+	// 	http.ListenAndServe(":6060", nil)
+	// }()
 	// Wait for termination signal
 	<-quit
 	fmt.Println("\n⚠️ Shutting down server...")
@@ -77,7 +112,12 @@ func StartServer() {
 	}
 
 	// Close DB connection
-	db.Close()
+	defer func(db *bun.DB) {
+		err := db.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(db)
 
 	fmt.Println("✅ Server gracefully stopped")
 }

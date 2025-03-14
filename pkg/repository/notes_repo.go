@@ -97,6 +97,5 @@ func (r *NotesRepository) SoftDelete(userID uuid.UUID) ([]types.Note, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error fetching recently deleted notes: %w", err)
 	}
-	fmt.Println(notes)
 	return notes, nil
 }
