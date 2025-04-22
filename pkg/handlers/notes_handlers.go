@@ -105,6 +105,7 @@ func (h *NotesHandler) GetNoteByID(c *gin.Context) {
 		h.response.SendError(c, http.StatusBadRequest, errM)
 		return
 	}
+	log.Println(uintID)
 	note, err := h.NotesRepo.GetNoteByID(uintID)
 	if err != nil {
 		h.response.SendError(c, http.StatusBadRequest, err.Error())

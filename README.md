@@ -2,6 +2,8 @@
 
 ![Go](https://img.shields.io/badge/Go-1.24-blue)
 
+Postman URL: <https://wathika.postman.co/workspace/learning_golang~9e52413b-9950-42ca-a023-275c7d53c013/collection/34083824-b611a8fb-4c49-41d7-b4ff-ed0559199f49?action=share&creator=34083824>
+
 ## Description
 
 Technologies used:

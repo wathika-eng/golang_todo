@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/uptrace/bun"
 	"golang_todo/pkg/config"
 	logging "golang_todo/pkg/logger"
 	"golang_todo/pkg/migrations"
 	"sync"
+
+	"github.com/uptrace/bun"
+	"golang.org/x/time/rate"
 
 	//"golang_todo/pkg/migrations"
 
@@ -38,7 +40,7 @@ func StartServer() {
 	// Initialize the database
 	db, err := config.InitDB()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	// Run migrations once
 	doOnce(func() {
@@ -49,12 +51,14 @@ func StartServer() {
 	//migrations.Drop(db)
 	// Set up Gin server
 	server := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+	server.Use(rateLimiter)
+
 	server.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"*"},
 		AllowOriginFunc: func(origin string) bool {
 			// Allow specific origins
 			allowedOrigins := []string{
-				"http://162.245.188.225",
 				"https://vue-todo-nine-henna.vercel.app",
 				"http://localhost:3000",
 			}
@@ -120,4 +124,15 @@ func StartServer() {
 	}(db)
 
 	fmt.Println("✅ Server gracefully stopped")
+}
+
+var limiter = rate.NewLimiter(1, 10)
+
+func rateLimiter(c *gin.Context) {
+	if !limiter.Allow() {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many requests"})
+		c.Abort()
+		return
+	}
+	c.Next()
 }

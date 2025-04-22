@@ -11,7 +11,7 @@ type User struct {
 	bun.BaseModel `bun:"table:users,alias:u"`
 
 	ID        uuid.UUID  `json:"user_id" bun:",pk,type:uuid,default:uuid_generate_v4()"`
-	Email     string     `json:"email" binding:"required,email,contains=@gmail.com" bun:"email,notnull,unique"`
+	Email     string     `json:"email" binding:"required,email" bun:"email,notnull,unique"`
 	Role      string     `json:"role" bun:"default:'user'"`
 	Password  string     `json:"password" binding:"required,gt=8" bun:"password,notnull"`
 	Notes     []Note     `json:"notes" bun:"rel:has-many,join:id=user_id"`

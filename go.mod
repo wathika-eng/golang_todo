@@ -14,6 +14,7 @@ require (
 	github.com/uptrace/bun/dialect/pgdialect v1.2.10
 	github.com/uptrace/bun/driver/pgdriver v1.2.10
 	golang.org/x/crypto v0.33.0
+	golang.org/x/time v0.11.0
 )
 
 require (

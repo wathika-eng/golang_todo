@@ -25,18 +25,20 @@ type Redis interface {
 }
 
 func NewRedisClient(redisURL string) Redis {
-	client := redis.NewClient(&redis.Options{
-		Addr:     redisURL, // Redis default port
-		Password: "",       // No password by default
-		DB:       0,
-	})
-	r, err := client.Ping().Result()
+	opt, err := redis.ParseURL(redisURL)
 	if err != nil {
-		// exit if no redis client
-		log.Fatal("Failed to connect to Redis:", err)
+		log.Fatalf("❌ Failed to parse Redis URL: %v", err)
 	}
 
-	log.Printf("Connected to Redis: %v", r)
+	client := redis.NewClient(opt) // ✅ Use everything from ParseURL
+
+	r, err := client.Ping().Result()
+	if err != nil {
+		log.Fatalf("❌ Failed to connect to Redis: %v", err)
+	}
+
+	log.Printf("✅ Connected to Redis: %v", r)
+
 	return &RedisService{
 		redisURL: redisURL,
 		Client:   client,
