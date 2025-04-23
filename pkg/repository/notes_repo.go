@@ -3,6 +3,7 @@ package repository
 import (
 	"fmt"
 	"golang_todo/pkg/types"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
@@ -19,6 +20,8 @@ func NewNotesRepo(db *bun.DB) *NotesRepository {
 }
 
 func (r *NotesRepository) InsertNotes(notes types.Note) error {
+	notes.CreatedAt = time.Now().In(time.UTC)
+
 	_, err := r.db.NewInsert().Model(&notes).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("error inserting new note: %v", err.Error())
@@ -53,7 +56,7 @@ func (r *NotesRepository) UpdateWithID(noteID uuid.UUID, updatedFields map[strin
 	if len(updatedFields) == 0 {
 		return nil, fmt.Errorf("no fields to update")
 	}
-
+	note.UpdatedAt = time.Now()
 	query := r.db.NewUpdate().Model(note).WherePK()
 	for field, value := range updatedFields {
 		query = query.Set(fmt.Sprintf("%s = ?", field), value)

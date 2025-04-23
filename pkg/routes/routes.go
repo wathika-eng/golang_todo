@@ -20,6 +20,7 @@ var resendApiKey = config.Envs.ResendApiKey
 var redisURL = config.Envs.RedisUrl
 
 func SetupRoutes(s *gin.Engine, db *bun.DB) {
+
 	userRepo := repository.NewUserRepo(db)
 	userServices := services.NewUserServices([]byte(secretKey), []byte(refreshKey), resendApiKey)
 	newResponse := response.NewResponse()

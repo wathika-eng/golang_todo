@@ -16,7 +16,7 @@ import (
 func InitDB() (*bun.DB, error) {
 	var dsn string
 	if Envs.ConnectionString == "" {
-		dsn = fmt.Sprintf("%v://%v:%v@%v:%v/%v",
+		dsn = fmt.Sprintf("%v://%v:%v@%v:%v/%v?sslmode=disable",
 			Envs.DbType, Envs.DbUser, Envs.DbPassword,
 			Envs.DbHost, Envs.DbPort, Envs.DbName)
 	} else {

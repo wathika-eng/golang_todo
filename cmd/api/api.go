@@ -81,7 +81,7 @@ func StartServer() {
 	server.RemoveExtraSlash = true
 	var PORT string = config.Envs.ServerPort
 	srv := &http.Server{
-		Addr:         ":" + PORT,
+		Addr:         "0.0.0.0:" + PORT,
 		Handler:      server,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,

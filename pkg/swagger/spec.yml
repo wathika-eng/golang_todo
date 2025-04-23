@@ -1,0 +1,260 @@
+openapi: 3.0.0
+info:
+  title: /home/wathi/Downloads/flows Mitmproxy2Swagger
+  version: 1.0.0
+servers:
+  - url: http://192.168.100.168
+    description: The default server
+paths:
+  :8000/api/users/test:
+    get:
+      summary: GET test
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: string
+                  error:
+                    type: boolean
+              example:
+                data: '2025-04-23T17:50:10.315310651+03:00'
+                error: false
+  :8000/api/users/signup:
+    post:
+      summary: POST signup
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: string
+                  error:
+                    type: boolean
+              example:
+                data: user myhykywana@mailinator.com created successfuly
+                error: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+            example:
+              email: myhykywana@mailinator.com
+              password: Pa$$w0rd!
+  :8000/api/users/login:
+    post:
+      summary: POST login
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  error:
+                    type: boolean
+                  message:
+                    type: string
+                  refresh_token:
+                    type: string
+              example:
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDU0MjM0MjMsImlhdCI6MTc0NTQxOTgyMywiaXNzIjoidG9kb0FwcCIsInJvbGUiOiIiLCJzdWIiOiJteWh5a3l3YW5hQG1haWxpbmF0b3IuY29tIiwidXNlcl9pZCI6IjY5NDI2NjBmLTQxZDMtNDFlNi1iMTk1LTZmYjEyMGY4YTE3MSJ9.bE71S-lAhg1Dm9U1zv0txfDH3BUWUM8wLz7Alc_BQsw
+                error: false
+                message: Access granted
+                refresh_token: ''
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+            example:
+              email: myhykywana@mailinator.com
+              password: Pa$$w0rd!
+  :8000/api/notes/:
+    get:
+      summary: GET notes
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                  message:
+                    type: string
+                  todos:
+                    type: object
+                    nullable: true
+              example:
+                error: false
+                message: no todos in the database
+                todos:
+  :8000/api/notes/create:
+    post:
+      summary: POST notes create
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: string
+                  error:
+                    type: boolean
+              example:
+                data: note created successfuly
+                error: false
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  error:
+                    type: boolean
+              example:
+                message:
+                  "Key: 'Note.Body' Error:Field validation for 'Body' failed
+                  on the 'gt' tag"
+                error: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes_body:
+                  type: string
+            example:
+              notes_body: Test my Todo App
+  :8000/api/notes/a287746c-e5c0-4f8a-ad4f-109fc9a363cf:
+    options:
+      summary: OPTIONS a287746c-e5c0-4f8a-ad4f-109fc9a363cf
+      responses:
+        '200':
+          description: OK
+          content: {}
+    patch:
+      summary: PATCH a287746c-e5c0-4f8a-ad4f-109fc9a363cf
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                  message:
+                    type: string
+                  todo:
+                    type: object
+                    properties:
+                      notes_id:
+                        type: string
+                      notes_body:
+                        type: string
+                      completed:
+                        type: boolean
+                      CreatedAt:
+                        type: string
+                      UpdatedAt:
+                        type: string
+                      DeletedAt:
+                        type: object
+                        nullable: true
+                      user_id:
+                        type: string
+              example:
+                error: false
+                message: updated todo successfully
+                todo:
+                  notes_id: a287746c-e5c0-4f8a-ad4f-109fc9a363cf
+                  notes_body: Test my Todo App
+                  completed: true
+                  CreatedAt: '2025-04-23T17:50:36.618451+03:00'
+                  UpdatedAt: '0001-01-01T00:00:00Z'
+                  DeletedAt:
+                  user_id: 6942660f-41d3-41e6-b195-6fb120f8a171
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  error:
+                    type: boolean
+              example:
+                message: body cannot be empty or blank
+                error: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                completed:
+                  type: boolean
+            example:
+              completed: true
+    delete:
+      summary: DELETE a287746c-e5c0-4f8a-ad4f-109fc9a363cf
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                  message:
+                    type: string
+                  todo:
+                    type: string
+              example:
+                error: false
+                message: deleted todo successfully
+                todo: '[]'
+x-path-templates:
+  # Remove the  prefix to generate an endpoint with its URL
+  # Lines that are closer to the top take precedence, the matching is greedy
+  - ignore::3000/assets/index-B4A7bxl2.css
+  - ignore::3000/assets/index-EyZalOZw.js
+  - ignore::3000/

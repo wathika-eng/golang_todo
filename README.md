@@ -2,7 +2,7 @@
 
 ![Go](https://img.shields.io/badge/Go-1.24-blue)
 
-Postman URL: <https://wathika.postman.co/workspace/learning_golang~9e52413b-9950-42ca-a023-275c7d53c013/collection/34083824-b611a8fb-4c49-41d7-b4ff-ed0559199f49?action=share&creator=34083824>
+Postman URL: <https://www.postman.com/wathika/workspace/todo-api/collection/34083824-b611a8fb-4c49-41d7-b4ff-ed0559199f49?action=share&creator=34083824&active-environment=34083824-f0a86a13-7c1d-4763-ac23-7aed9684e8ab>
 
 ## Description
 
@@ -55,6 +55,14 @@ COMPOSE_BAKE=true docker compose up -d --build
 ```
 
 Access the API via: <http://localhost:8000/api/users/test>
+
+## Setup frontend
+
+```bash
+cd frontend && npm i
+#cd to src/services/api.js and change the baseURL to your backend url
+npm run dev
+```
 
 Or <http://localhost/api/users/test> if you are using docker
 

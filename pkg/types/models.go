@@ -27,7 +27,7 @@ type Note struct {
 	Body      string     `json:"notes_body" binding:"required,gt=5" bun:"body,notnull"`
 	Completed bool       `json:"completed"  bun:"completed,default:false"`
 	CreatedAt time.Time  `bun:"created_at,notnull,default:current_timestamp"`
-	UpdatedAt *time.Time `bun:"updated_at,nullzero,default:current_timestamp"`
+	UpdatedAt time.Time  `bun:"updated_at,nullzero"`
 	DeletedAt *time.Time `bun:"deleted_at,soft_delete,nullzero"`
 	UserID    uuid.UUID  `json:"user_id" bun:"type:uuid,notnull"`
 }
